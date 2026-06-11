@@ -1,17 +1,14 @@
 import type { GamePhase } from './types'
+import { GameFooterBar } from '../GameFooterBar'
 
 type BottomButtonsProps = {
   phase: GamePhase
-  onExit: () => void
   onStop: () => void
 }
 
-export function BottomButtons({ phase, onExit, onStop }: BottomButtonsProps) {
+export function BottomButtons({ phase, onStop }: BottomButtonsProps) {
   return (
-    <div className="claw-game__controls">
-      <button type="button" className="claw-game__back" onClick={onExit}>
-        나가기
-      </button>
+    <GameFooterBar className="game-footer-bar--game1">
       <button
         type="button"
         className="claw-game__play"
@@ -20,6 +17,6 @@ export function BottomButtons({ phase, onExit, onStop }: BottomButtonsProps) {
       >
         {phase === 'spinning' ? 'STOP' : phase === 'striking' ? '...' : '대기'}
       </button>
-    </div>
+    </GameFooterBar>
   )
 }

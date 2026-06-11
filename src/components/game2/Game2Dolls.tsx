@@ -1,22 +1,19 @@
-import { useMemo } from 'react'
-import { DOLL_EMOJIS } from '../../game/clawGameConfig'
-import { GAME2_DOLLS } from '../../game/game2Config'
-import { generateGame2DollPlacements } from '../../game/game2PlayArea'
+import type { Game2DollState } from '../../game/game2PlayArea'
 import './game2-dolls.css'
 
-export function Game2Dolls() {
-  const dolls = useMemo(
-    () => generateGame2DollPlacements(GAME2_DOLLS.count, DOLL_EMOJIS),
-    [],
+type Game2DollsProps = {
+  dolls: readonly Game2DollState[]
+  heldDollId: number | null
+}
+
+export function Game2Dolls({ dolls, heldDollId }: Game2DollsProps) {
+  const floorDolls = dolls.filter(
+    (doll) => !doll.captured && !doll.falling && doll.id !== heldDollId,
   )
 
   return (
-    <div
-      className="g2-dolls"
-      style={{ ['--g2-doll-size' as string]: `${GAME2_DOLLS.emojiSizePx}px` }}
-      aria-hidden="true"
-    >
-      {dolls.map((doll) => (
+    <div className="g2-dolls" aria-hidden="true">
+      {floorDolls.map((doll) => (
         <span
           key={doll.id}
           className="g2-dolls__item"

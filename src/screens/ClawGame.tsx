@@ -223,7 +223,8 @@ export function ClawGame({ onExit }: ClawGameProps) {
 
   return (
     <MobileLayout
-      footer={<BottomButtons phase={phase} onExit={onExit} onStop={handlePlay} />}
+      onExit={onExit}
+      footer={<BottomButtons phase={phase} onStop={handlePlay} />}
     >
       <div className="claw-game">
         <InstructionBar message={instruction} />

@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GameFooterBar } from '../components/GameFooterBar'
 import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
-import { Game2Viewport } from '../components/game2/Game2Viewport'
+import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
-import { GAME2_CLAW, type Game2ClawPhase, type Game2ClawState } from '../game/game2Config'
+import { DOLL_EMOJIS } from '../game/clawGameConfig'
+import { GAME2_CLAW, getGame2ChuteFallSequenceMs, type Game2ClawPhase, type Game2ClawState } from '../game/game2Config'
 import {
+  createInitialGame2Dolls,
   easeOutCubic,
   getDefaultGame2ClawState,
   getDefaultGame2PlayPosition,
   getGame2ChuteCenter,
+  getGame2HeldDollReleasePoint,
   isClawMovementLocked,
   lerpPlayPosition,
   movePlayPosition,
+  tryGrabNearestDoll,
+  type Game2DollState,
 } from '../game/game2PlayArea'
 import './Game2.css'
 
@@ -19,16 +25,16 @@ type Game2Props = {
   onExit: () => void
 }
 
-function getClawStatusMessage(phase: Game2ClawPhase) {
+function getClawStatusMessage(phase: Game2ClawPhase, hasHeldDoll: boolean) {
   switch (phase) {
     case 'descending':
       return '집게가 하강 중입니다…'
     case 'down':
-      return '집게가 집는 중입니다…'
+      return hasHeldDoll ? '인형을 잡았습니다!' : '집게가 닫혔습니다…'
     case 'ascending':
-      return '집게가 상승 중입니다…'
+      return hasHeldDoll ? '인형을 들어 올리는 중…' : '집게가 상승 중입니다…'
     case 'returning':
-      return '배출구로 이동 중입니다…'
+      return hasHeldDoll ? '인형을 배출구로 옮기는 중…' : '배출구로 이동 중입니다…'
     case 'atChute':
       return '배출구에 도착했습니다.'
     case 'openAtChute':
@@ -42,10 +48,16 @@ function getClawStatusMessage(phase: Game2ClawPhase) {
 
 export function Game2({ onExit }: Game2Props) {
   const [claw, setClaw] = useState<Game2ClawState>(getDefaultGame2ClawState)
+  const [dolls, setDolls] = useState<Game2DollState[]>(() =>
+    createInitialGame2Dolls(DOLL_EMOJIS),
+  )
   const clawRef = useRef(claw)
   clawRef.current = claw
+  const dollsRef = useRef(dolls)
+  dollsRef.current = dolls
   const returnOriginRef = useRef<{ x: number; y: number } | null>(null)
   const homewardOriginRef = useRef<{ x: number; y: number } | null>(null)
+  const viewportRef = useRef<Game2ViewportHandle>(null)
 
   const controlsLocked = isClawMovementLocked(claw)
 
@@ -65,6 +77,7 @@ export function Game2({ onExit }: Game2Props) {
         open: true,
         phase: 'descending',
         descendT: 0,
+        heldDollId: null,
       }
     })
   }, [])
@@ -83,7 +96,11 @@ export function Game2({ onExit }: Game2Props) {
       setClaw((prev) => {
         if (prev.phase !== 'descending') return prev
         if (linear >= 1) {
-          return { ...prev, phase: 'down', descendT: 1, open: false }
+          const heldDollId = tryGrabNearestDoll(
+            { x: prev.xPercent, y: prev.playY },
+            dollsRef.current,
+          )
+          return { ...prev, phase: 'down', descendT: 1, open: false, heldDollId }
         }
         return { ...prev, descendT: eased }
       })
@@ -195,9 +212,39 @@ export function Game2({ onExit }: Game2Props) {
     if (claw.phase !== 'atChute') return
 
     const timeout = window.setTimeout(() => {
+      const heldId = clawRef.current.heldDollId
+      if (heldId !== null) {
+        const release =
+          viewportRef.current?.measureHeldDollRelease() ??
+          getGame2HeldDollReleasePoint(clawRef.current)
+        setDolls((prev) =>
+          prev.map((doll) =>
+            doll.id === heldId
+              ? {
+                  ...doll,
+                  falling: true,
+                  xPercent: release.x,
+                  playY: release.y,
+                  depthScale: release.depthScale,
+                }
+              : doll,
+          ),
+        )
+
+        window.setTimeout(() => {
+          setDolls((prev) =>
+            prev.map((doll) =>
+              doll.id === heldId
+                ? { ...doll, falling: false, captured: true }
+                : doll,
+            ),
+          )
+        }, getGame2ChuteFallSequenceMs())
+      }
+
       setClaw((prev) => {
         if (prev.phase !== 'atChute') return prev
-        return { ...prev, phase: 'openAtChute', open: true }
+        return { ...prev, phase: 'openAtChute', open: true, heldDollId: null }
       })
     }, GAME2_CLAW.holdAtChuteMs)
 
@@ -247,6 +294,7 @@ export function Game2({ onExit }: Game2Props) {
             playY: to.y,
             descendT: 0,
             open: true,
+            heldDollId: null,
           }
         }
         return {
@@ -325,22 +373,22 @@ export function Game2({ onExit }: Game2Props) {
 
   return (
     <MobileLayout
+      onExit={onExit}
       footer={
-        <div className="game2-footer">
+        <GameFooterBar className="game-footer-bar--game2">
           <Game2PlayControls
             onMove={handleMove}
             onDescend={handleDescend}
             disabled={controlsLocked}
           />
-          <button type="button" className="game2__back" onClick={onExit}>
-            나가기
-          </button>
-        </div>
+        </GameFooterBar>
       }
     >
       <div className="game2">
-        <Game2InstructionBar message={getClawStatusMessage(claw.phase)} />
-        <Game2Viewport claw={claw} />
+        <Game2InstructionBar
+          message={getClawStatusMessage(claw.phase, claw.heldDollId !== null)}
+        />
+        <Game2Viewport ref={viewportRef} claw={claw} dolls={dolls} />
       </div>
     </MobileLayout>
   )

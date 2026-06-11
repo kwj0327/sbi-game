@@ -290,3 +290,20 @@
 .g2-claw--descending .g2-claw__rig {
   transition: none;
 }
+
+.g2-claw__held-doll {
+  position: absolute;
+  left: 50%;
+  top: 94%;
+  z-index: 4;
+  font-size: calc(var(--g2-doll-size, 72px) * var(--g2-stage-scale, 1));
+  line-height: 1;
+  transform: translate(-50%, -42%) rotate(var(--g2-held-rotate, 0deg));
+  transform-origin: center center;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 18%));
+  pointer-events: none;
+}
+
+.g2-claw--carrying.g2-claw--closed .g2-claw__held-doll {
+  top: 96%;
+}

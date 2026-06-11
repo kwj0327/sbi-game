@@ -14,14 +14,14 @@ export type GameInfo = {
 export const GAMES: readonly GameInfo[] = [
   {
     id: 'claw',
-    title: '인형뽑기',
+    title: '회전 인형 뽑기',
     description: '타이밍에 맞춰 STOP!\n인형을 뽑아보세요.',
     icon: clawGameIcon,
   },
   {
     id: 'game2',
-    title: '게임 2',
-    description: '새로운 미니게임 (준비 중)',
+    title: '집게 인형 뽑기',
+    description: '조이스틱으로 집게를 이동!\n↓로 하강!',
     icon: game2Icon,
   },
   {

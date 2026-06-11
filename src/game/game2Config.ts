@@ -36,6 +36,12 @@ export const GAME2_CLAW = {
   returnToHomeDurationMs: 2600,
 } as const
 
+/** 착지·집기 (난이도 튜닝은 추후) */
+export const GAME2_GRAB = {
+  /** 집게 play 좌표 기준 잡기 반경 (stage %) */
+  maxRadius: 10,
+} as const
+
 export const GAME2_CLAW_POSE = {
   /** 확정 디폴트 — 벌린 집게 (open: true). 윗팔 수평 + 아랫팔 수직·살짝 바깥 */
   open: {
@@ -80,6 +86,8 @@ export type Game2ClawState = {
   phase: Game2ClawPhase
   /** 0(공중) … 1(바닥 착지) — 하강 시각 진행도 */
   descendT: number
+  /** 집게에 붙어 있는 인형 id · 없으면 null */
+  heldDollId: number | null
 }
 
 /**
@@ -111,6 +119,19 @@ export const GAME2_FLOOR_CHUTE = {
   height: 7.5,
 } as const
 
+/** 배출구 낙하 연출 */
+export const GAME2_CHUTE_FALL = {
+  fallDurationMs: 1400,
+  holdMs: 0,
+  fadeMs: 0,
+  scaleEnd: 0.38,
+} as const
+
+export function getGame2ChuteFallSequenceMs() {
+  const { fallDurationMs, holdMs, fadeMs } = GAME2_CHUTE_FALL
+  return fallDurationMs + holdMs + fadeMs
+}
+
 /** 플레이 영역 격자 — 뒤(벽) → 앞, 좌 → 우 (원근 사다리꼴 타일) */
 export const GAME2_PLAY_GRID = {
   cols: 4,
@@ -129,4 +150,5 @@ export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   open: true,
   phase: 'idle',
   descendT: 0,
+  heldDollId: null,
 }

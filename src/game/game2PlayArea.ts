@@ -1,7 +1,9 @@
 import {
   GAME2_CLAW,
+  GAME2_DOLLS,
   GAME2_FLOOR,
   GAME2_FLOOR_CHUTE,
+  GAME2_GRAB,
   GAME2_PLAY_AREA_CHUTE,
   GAME2_PLAY_GRID,
   GAME2_STAGE,
@@ -227,6 +229,81 @@ export function getClawRenderFromPlayPosition(
   }
 }
 
+export type Game2HeldDollReleasePoint = Game2PlayPosition & {
+  depthScale: number
+}
+
+/** 집게에 붙은 인형 중심 — 낙하 시작점 (playfield %). DOM 측정 불가 시 폴백 */
+export function getGame2HeldDollReleasePoint(
+  claw: Pick<Game2ClawState, 'xPercent' | 'playY' | 'descendT'>,
+  playfield?: { width: number; height: number; stageScale: number },
+): Game2HeldDollReleasePoint {
+  const render = getClawRenderFromPlayPosition(
+    { x: claw.xPercent, y: claw.playY },
+    { descendT: claw.descendT },
+  )
+  const { railY, rigWidth } = GAME2_CLAW
+  const { viewWidth, viewHeight } = GAME2_STAGE
+  const { emojiSizePx } = GAME2_DOLLS
+
+  const depthScale = render.depthScale
+  const rigHeightPercent =
+    rigWidth * depthScale * (viewWidth / viewHeight) * (380 / 319)
+  const rigTopYPercent = railY + render.cableLengthPercent
+  /** .g2-claw--carrying.g2-claw--closed .g2-claw__held-doll top 96% */
+  const heldTopRatio = 0.96
+
+  if (playfield && playfield.width > 0 && playfield.height > 0) {
+    const scale = playfield.stageScale > 0 ? playfield.stageScale : 1
+    const rigTopPx = (rigTopYPercent / 100) * playfield.height
+    const rigHeightPx = (rigHeightPercent / 100) * playfield.height
+    const emojiPx = emojiSizePx * scale * depthScale
+    const centerYPx = rigTopPx + rigHeightPx * heldTopRatio + emojiPx * 0.08
+
+    return {
+      x: render.xPercent,
+      y: (centerYPx / playfield.height) * 100,
+      depthScale,
+    }
+  }
+
+  return {
+    x: render.xPercent,
+    y: rigTopYPercent + rigHeightPercent * (heldTopRatio + 0.02),
+    depthScale,
+  }
+}
+
+/** 렌더 직후 집게에 붙은 인형의 화면 중심 → playfield % (가장 정확) */
+export function measureGame2HeldDollReleasePoint(
+  playfieldEl: HTMLElement,
+): Game2HeldDollReleasePoint | null {
+  const held = playfieldEl.querySelector('.g2-claw__held-doll')
+  if (!(held instanceof HTMLElement)) return null
+
+  const playfieldRect = playfieldEl.getBoundingClientRect()
+  if (playfieldRect.width <= 0 || playfieldRect.height <= 0) return null
+
+  const heldRect = held.getBoundingClientRect()
+  const centerX = heldRect.left + heldRect.width / 2
+  const centerY = heldRect.top + heldRect.height / 2
+
+  const stageScaleRaw = getComputedStyle(playfieldEl).getPropertyValue('--g2-stage-scale').trim()
+  const stageScale = Number.parseFloat(stageScaleRaw) || 1
+  const depthScale =
+    heldRect.height > 0
+      ? heldRect.height / (GAME2_DOLLS.emojiSizePx * stageScale)
+      : getHeldDollDepthScale(
+          ((centerY - playfieldRect.top) / playfieldRect.height) * 100,
+        )
+
+  return {
+    x: ((centerX - playfieldRect.left) / playfieldRect.width) * 100,
+    y: ((centerY - playfieldRect.top) / playfieldRect.height) * 100,
+    depthScale,
+  }
+}
+
 /** play 좌표 → 바닥 착지 마커 (원근에 맞춘 발자국 크기) */
 export function getClawFloorMarkerFromPlayPosition(
   position: Game2PlayPosition,
@@ -339,6 +416,7 @@ export function getDefaultGame2ClawState(): Game2ClawState {
       open: true,
       phase: 'idle',
       descendT: 0,
+      heldDollId: null,
     }
   }
 
@@ -353,6 +431,7 @@ export function getDefaultGame2ClawState(): Game2ClawState {
     open: true,
     phase: 'idle',
     descendT: 0,
+    heldDollId: null,
   }
 }
 
@@ -409,6 +488,58 @@ export type Game2DollPlacement = {
   playY: number
   depthScale: number
   rotateDeg: number
+}
+
+export type Game2DollState = Game2DollPlacement & {
+  captured: boolean
+  falling: boolean
+}
+
+export function createInitialGame2Dolls(emojis: readonly string[]): Game2DollState[] {
+  return generateGame2DollPlacements(GAME2_DOLLS.count, emojis).map((doll) => ({
+    ...doll,
+    captured: false,
+    falling: false,
+  }))
+}
+
+/** 착지 시 가장 가까운 미배출 인형 id (반경 밖이면 null) */
+export function tryGrabNearestDoll(
+  claw: Game2PlayPosition,
+  dolls: readonly Game2DollState[],
+  maxRadius = GAME2_GRAB.maxRadius,
+): number | null {
+  let best: { id: number; dist: number } | null = null
+
+  for (const doll of dolls) {
+    if (doll.captured) continue
+
+    const dx = doll.xPercent - claw.x
+    const dy = doll.playY - claw.y
+    const dist = Math.hypot(dx, dy)
+    if (dist > maxRadius) continue
+
+    if (!best || dist < best.dist) {
+      best = { id: doll.id, dist }
+    }
+  }
+
+  return best?.id ?? null
+}
+
+export function getGame2DollById(
+  dolls: readonly Game2DollState[],
+  id: number | null,
+): Game2DollState | null {
+  if (id === null) return null
+  return dolls.find((doll) => doll.id === id) ?? null
+}
+
+/** 집게에 붙은 인형 depth scale — 현재 play y 기준 */
+export function getHeldDollDepthScale(playY: number) {
+  const { perspectiveScaleBack, perspectiveScaleFront } = GAME2_CLAW
+  const depthT = getPlayDepthT(playY)
+  return lerp(perspectiveScaleBack, perspectiveScaleFront, depthT)
 }
 
 /** 핑크 플레이 영역 격자 칸 중심에 인형 배치 (칸당 1개, 균일 분포) */

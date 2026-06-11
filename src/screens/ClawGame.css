@@ -29,30 +29,14 @@
   background: var(--color-surface-elevated);
 }
 
-.claw-game__controls {
-  display: grid;
-  grid-template-columns: 1fr 1.45fr;
-  gap: 2.6%;
-  width: 100%;
-  padding: 1% 0 0.5%;
-}
-
-.claw-game__back,
 .claw-game__play {
+  width: 100%;
   min-height: 52px;
+  box-sizing: border-box;
   border: none;
   border-radius: 14px;
   font-size: clamp(15px, 4.1vw, 16px);
   font-weight: 700;
-}
-
-.claw-game__back {
-  color: var(--color-text);
-  background: var(--color-surface-elevated);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
-}
-
-.claw-game__play {
   color: #fff;
   background: linear-gradient(180deg, #ff6b95 0%, #ff4d7e 100%);
   box-shadow:
@@ -65,7 +49,6 @@
   cursor: not-allowed;
 }
 
-.claw-game__play:active:not(:disabled),
-.claw-game__back:active {
+.claw-game__play:active:not(:disabled) {
   transform: scale(0.98);
 }

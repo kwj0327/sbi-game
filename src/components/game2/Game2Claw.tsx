@@ -7,9 +7,10 @@ import { getClawRenderFromPlayPosition, getDefaultGame2ClawState } from '../../g
 
 type Game2ClawProps = {
   claw?: Partial<Game2ClawState>
+  heldDoll?: { emoji: string; rotateDeg: number } | null
 }
 
-export function Game2Claw({ claw }: Game2ClawProps) {
+export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
   const defaults = getDefaultGame2ClawState()
   const xPercent = claw?.xPercent ?? defaults.xPercent
   const playY = claw?.playY ?? defaults.playY
@@ -31,7 +32,7 @@ export function Game2Claw({ claw }: Game2ClawProps) {
 
   return (
     <div
-      className={`g2-claw${open ? ' g2-claw--open' : ' g2-claw--closed'}${isCableAnimating ? ' g2-claw--descending' : ''}`}
+      className={`g2-claw${open ? ' g2-claw--open' : ' g2-claw--closed'}${isCableAnimating ? ' g2-claw--descending' : ''}${heldDoll ? ' g2-claw--carrying' : ''}`}
       style={{
         ['--g2-claw-x' as string]: `${render.xPercent}%`,
         ['--g2-claw-rail-y' as string]: `${GAME2_CLAW.railY}%`,
@@ -82,6 +83,15 @@ export function Game2Claw({ claw }: Game2ClawProps) {
             </div>
           </div>
         </div>
+        {heldDoll ? (
+          <span
+            className="g2-claw__held-doll"
+            style={{ ['--g2-held-rotate' as string]: `${heldDoll.rotateDeg}deg` }}
+            aria-hidden="true"
+          >
+            {heldDoll.emoji}
+          </span>
+        ) : null}
       </div>
     </div>
   )
