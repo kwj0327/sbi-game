@@ -1,0 +1,94 @@
+/* ── Layout tokens — .machine-interior 좌표계 (알고리즘과 동기화, 변경 금지) ── */
+
+:root {
+  --game-aspect-w: 576;
+  --game-aspect-h: 1024;
+  --machine-shell-radius: 4.6%;
+  --machine-frame: 4.1%;
+  --machine-gap-top-radius: 2.6%;
+
+  --ix-back-l: 16%;
+  --ix-back-r: 84%;
+  --ix-front-l: 0%;
+  --ix-front-r: 100%;
+  --ix-ceiling-inset-top: 4%;
+  --ix-ceiling-back-y: 6%;
+  --ix-ceiling-stack: calc(var(--ix-ceiling-inset-top) + var(--ix-ceiling-back-y));
+  --ix-floor-h: 18%;
+  --ix-back-wall-inset-bottom: calc(var(--ix-ceiling-inset-top) * 2.5);
+  --ix-floor-stack: calc(var(--ix-floor-h) + var(--ix-back-wall-inset-bottom));
+
+  --ix-y-top: 0%;
+  --ix-y-gap7-bottom: var(--ix-ceiling-inset-top);
+  --ix-gap-extend-x: 5%;
+  --ix-gap-front-l: calc(var(--ix-front-l) - var(--ix-gap-extend-x));
+  --ix-gap-front-r: calc(var(--ix-front-r) + var(--ix-gap-extend-x));
+  --ix-y-back-top: var(--ix-ceiling-stack);
+  --ix-y-back-bottom: calc(100% - var(--ix-floor-stack));
+  --ix-y-gap6-top: calc(100% - var(--ix-back-wall-inset-bottom));
+  --ix-y-bottom: 100%;
+
+  --ix-inner-floor-scale: 0.55;
+  --ix-inner-floor-h: calc(var(--ix-floor-h) * var(--ix-inner-floor-scale));
+  --ix-inner-gap-h: calc(var(--ix-back-wall-inset-bottom) * var(--ix-inner-floor-scale));
+  --ix-y-inner-floor-top: calc(var(--ix-y-gap6-top) - var(--ix-inner-floor-h));
+  --ix-y-inner-bottom: calc(var(--ix-y-gap6-top) + var(--ix-inner-gap-h));
+  --ix-inner-front-l: var(--ix-chute-front-l);
+  --ix-inner-front-r: var(--ix-chute-front-r);
+  --ix-inner-back-l: 38%;
+  --ix-inner-back-r: 62%;
+  --ix-chute-front-l: 33%;
+  --ix-chute-front-r: 67%;
+
+  /* ── Arcade cabinet palette ── */
+  --cabinet-void: #12141c;
+  --cabinet-frame: #2a2f3a;
+  --cabinet-frame-deep: #1c2029;
+  --cabinet-bezel: #3a4150;
+  --cabinet-slot: #232833;
+
+  --interior-back-top: #fff4fb;
+  --interior-back-bottom: #ebe6ff;
+  --interior-side-tint: rgb(186 214 255 / 22%);
+  --interior-ceiling: #eef2f8;
+  --interior-floor: #ffe8dc;
+  --interior-floor-shine: #fff6ef;
+  --interior-slot: #2f3542;
+
+  --struct-floor: var(--interior-floor);
+  --struct-floor-gap: var(--interior-slot);
+  --struct-back: linear-gradient(180deg, var(--interior-back-top) 0%, var(--interior-back-bottom) 100%);
+  --struct-side: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 18%) 0%,
+    var(--interior-side-tint) 38%,
+    rgb(120 150 210 / 12%) 100%
+  );
+  --struct-ceiling: linear-gradient(180deg, #f8fbff 0%, var(--interior-ceiling) 100%);
+  --struct-frame: var(--cabinet-bezel);
+  --struct-void: var(--cabinet-void);
+
+  --struct-chute-base: #252830;
+  --struct-chute-mid: #1e2129;
+  --struct-chute-deep: #12141a;
+  --struct-chute-highlight: rgb(130 140 158 / 24%);
+  --struct-chute-fill:
+    radial-gradient(ellipse 52% 48% at 0% 0%, var(--struct-chute-highlight) 0%, transparent 72%),
+    radial-gradient(ellipse 52% 48% at 100% 0%, var(--struct-chute-highlight) 0%, transparent 72%),
+    radial-gradient(ellipse 52% 48% at 0% 100%, rgb(110 120 138 / 18%) 0%, transparent 72%),
+    radial-gradient(ellipse 52% 48% at 100% 100%, rgb(110 120 138 / 18%) 0%, transparent 72%),
+    radial-gradient(ellipse 95% 60% at 50% 0%, rgb(90 100 118 / 16%) 0%, transparent 58%),
+    linear-gradient(
+      180deg,
+      #3a404c 0%,
+      var(--struct-chute-base) 38%,
+      var(--struct-chute-mid) 68%,
+      var(--struct-chute-deep) 100%
+    );
+  --struct-chute-rim: rgb(126 200 255 / 55%);
+
+  --machine-mount-fill: rgb(255 255 255 / 98%);
+  --machine-rail-edge: #6b9fd4;
+  --machine-glass-highlight: rgb(255 255 255 / 34%);
+  --machine-glass-sheen: rgb(180 210 255 / 12%);
+}

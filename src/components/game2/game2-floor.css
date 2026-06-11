@@ -1,0 +1,42 @@
+.g2-floor-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.g2-floor-guide__edge {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.g2-floor-guide__edge--play {
+  stroke: #ff3d7a;
+  stroke-width: 0.45;
+}
+
+.g2-floor-guide__edge--chute {
+  stroke: #ff8c2a;
+  stroke-width: 0.5;
+}
+
+.g2-floor-guide__cell-shape {
+  fill: rgb(255 61 122 / 10%);
+  stroke: #ff3d7a;
+  stroke-width: 0.28;
+  stroke-opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.g2-floor-guide__cell-label {
+  fill: #ff3d7a;
+  font-size: 2.8px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}

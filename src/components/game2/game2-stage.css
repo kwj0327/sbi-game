@@ -1,0 +1,38 @@
+@import './game2-tokens.css';
+
+.g2-viewport {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.g2-stage {
+  position: relative;
+  align-self: center;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: var(--g2-aspect-w) / var(--g2-aspect-h);
+  overflow: visible;
+  background: transparent;
+  --g2-stage-scale: 1;
+  --g2-claw-rail-y: 8.5%;
+  --stage-content-x: 0%;
+  --stage-content-y: 0%;
+  --stage-content-w: 100%;
+  --stage-content-h: 100%;
+}
+
+.g2-stage__bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 0;
+}

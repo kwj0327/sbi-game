@@ -1,0 +1,133 @@
+.mobile-shell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+.mobile-frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--app-max-width);
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--color-bg);
+  --header-content-height: 56px;
+  --header-logo-height: 40px;
+  --main-pad-x: 16px;
+}
+
+.mobile-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--header-content-height) + var(--safe-top));
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  border-bottom: 1px solid rgb(0 0 0 / 8%);
+  background: var(--color-bg);
+}
+
+.mobile-header__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-header__logo {
+  display: block;
+  height: var(--header-logo-height);
+  width: auto;
+  max-width: min(320px, 86vw);
+  object-fit: contain;
+}
+
+.mobile-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding:
+    16px
+    calc(var(--main-pad-x) + var(--safe-right))
+    16px
+    calc(var(--main-pad-x) + var(--safe-left));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-main--scrollable {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.mobile-footer {
+  flex-shrink: 0;
+  padding:
+    8px
+    calc(12px + var(--safe-right))
+    calc(8px + var(--safe-bottom))
+    calc(12px + var(--safe-left));
+  border-top: 1px solid rgb(0 0 0 / 8%);
+  background: var(--color-bg);
+}
+
+@media (max-width: 430px) {
+  .mobile-frame {
+    --main-pad-x: 4px;
+  }
+
+  .mobile-main {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    gap: 8px;
+  }
+
+  .claw-game__instruction,
+  .game2__instruction {
+    display: none;
+  }
+
+  .claw-game,
+  .game2 {
+    gap: 0;
+  }
+
+  .game2 .g2-stage {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 431px) {
+  .mobile-shell {
+    padding: 12px 0;
+    background: #f2f2f4;
+  }
+
+  .mobile-frame {
+    --header-content-height: var(--header-height);
+    --header-logo-height: 54px;
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+    min-height: calc(100dvh - 24px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 6%),
+      0 16px 40px rgb(0 0 0 / 8%);
+  }
+}

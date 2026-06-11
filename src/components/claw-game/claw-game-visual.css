@@ -1,0 +1,480 @@
+/* ── game-stage: single scaled coordinate container ── */
+
+.machine-viewport {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.game-stage {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: var(--game-aspect-w) / var(--game-aspect-h);
+  max-height: 100%;
+  overflow: hidden;
+  background: transparent;
+  --machine-claw-visual-offset: 15%;
+  --orbit-scale: 1;
+  --stage-content-x: 0%;
+  --stage-content-y: 0%;
+  --stage-content-w: 100%;
+  --stage-content-h: 100%;
+}
+
+.game-stage.machine-interior {
+  position: relative;
+  inset: auto;
+}
+
+.machine-bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.game-stage__mechanism,
+.machine-mechanism-layer {
+  position: absolute;
+  left: var(--stage-content-x, 0%);
+  top: var(--stage-content-y, 0%);
+  width: var(--stage-content-w, 100%);
+  height: var(--stage-content-h, 100%);
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+}
+
+/* legacy CSS machine visuals — disabled (PNG only) */
+
+.machine-gap-frame-fill,
+.machine-gap-side-fill,
+.machine-back-wall,
+.machine-side-wall,
+.machine-ceiling,
+.machine-ceiling__gap,
+.machine-floor,
+.machine-floor__gap,
+.machine-front-frame,
+.machine-chute,
+.machine-chute__drop,
+.machine-chute__lip,
+.machine-chute-edges,
+.machine-glass-overlay,
+.machine-visual-layer {
+  display: none !important;
+}
+
+/* legacy shell wrappers — unused after game-stage refactor */
+
+/* ── Outer bezel fills (legacy CSS visuals) ── */
+
+.machine-gap-frame-fill {
+  position: absolute;
+  background: linear-gradient(180deg, var(--cabinet-bezel) 0%, var(--cabinet-frame-deep) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.machine-gap-frame-fill--top {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--machine-frame);
+  border-radius: var(--machine-shell-radius) var(--machine-shell-radius) 0 0;
+}
+
+.machine-gap-frame-fill--bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--machine-frame);
+  border-radius: 0 0 var(--machine-shell-radius) var(--machine-shell-radius);
+}
+
+.machine-gap-frame-fill--left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--machine-frame);
+  border-radius: var(--machine-shell-radius) 0 0 var(--machine-shell-radius);
+}
+
+.machine-gap-frame-fill--right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--machine-frame);
+  border-radius: 0 var(--machine-shell-radius) var(--machine-shell-radius) 0;
+}
+
+.machine-gap-side-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--cabinet-slot);
+  pointer-events: none;
+}
+
+.machine-gap-side-fill--left {
+  left: var(--ix-gap-front-l);
+  width: var(--ix-gap-extend-x);
+}
+
+.machine-gap-side-fill--right {
+  right: calc(100% - var(--ix-gap-front-r));
+  width: var(--ix-gap-extend-x);
+}
+
+/* ── Front bezel / glass frame ── */
+
+.machine-front-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  pointer-events: none;
+}
+
+.machine-front-frame__edge {
+  position: absolute;
+  background: linear-gradient(180deg, rgb(255 255 255 / 10%) 0%, rgb(0 0 0 / 18%) 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%);
+}
+
+.machine-front-frame__edge--top {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--machine-frame);
+  border-radius: var(--machine-shell-radius) var(--machine-shell-radius) 0 0;
+}
+
+.machine-front-frame__edge--bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--machine-frame);
+  border-radius: 0 0 var(--machine-shell-radius) var(--machine-shell-radius);
+}
+
+.machine-front-frame__edge--left,
+.machine-front-frame__edge--right {
+  top: var(--machine-frame);
+  bottom: var(--machine-frame);
+  width: var(--machine-frame);
+}
+
+.machine-front-frame__edge--left {
+  left: 0;
+}
+
+.machine-front-frame__edge--right {
+  right: 0;
+}
+
+.machine-front-frame__glass {
+  display: none;
+}
+
+/* ── Interior faces ── */
+
+.machine-back-wall {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.machine-back-wall__surface {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    var(--ix-back-l) var(--ix-y-back-top),
+    var(--ix-back-r) var(--ix-y-back-top),
+    var(--ix-back-r) var(--ix-y-back-bottom),
+    var(--ix-back-l) var(--ix-y-back-bottom)
+  );
+  background: var(--struct-back);
+  box-shadow: inset 0 8% 18% rgb(255 255 255 / 35%);
+}
+
+.machine-back-wall__inset {
+  display: none;
+}
+
+.machine-side-wall {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.machine-side-wall__glass {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(1px);
+}
+
+.machine-side-wall--left .machine-side-wall__glass {
+  clip-path: polygon(
+    var(--ix-front-l) var(--ix-y-gap7-bottom),
+    var(--ix-back-l) var(--ix-y-back-top),
+    var(--ix-back-l) var(--ix-y-back-bottom),
+    var(--ix-front-l) var(--ix-y-gap6-top)
+  );
+  background: var(--struct-side);
+  box-shadow: inset 2px 0 8px rgb(255 255 255 / 12%);
+}
+
+.machine-side-wall--right .machine-side-wall__glass {
+  clip-path: polygon(
+    var(--ix-front-r) var(--ix-y-gap7-bottom),
+    var(--ix-back-r) var(--ix-y-back-top),
+    var(--ix-back-r) var(--ix-y-back-bottom),
+    var(--ix-front-r) var(--ix-y-gap6-top)
+  );
+  background: var(--struct-side);
+  box-shadow: inset -2px 0 8px rgb(255 255 255 / 12%);
+}
+
+.machine-side-wall__neon,
+.machine-side-wall__floor-joint {
+  display: none;
+}
+
+/* ── Ceiling & top rail ── */
+
+.machine-ceiling__gap {
+  position: absolute;
+  top: 0;
+  left: var(--ix-gap-front-l);
+  right: calc(100% - var(--ix-gap-front-r));
+  height: var(--ix-y-gap7-bottom);
+  z-index: 3;
+  overflow: visible;
+  border-radius: var(--machine-gap-top-radius) var(--machine-gap-top-radius) 0 0;
+  background: var(--cabinet-slot);
+  pointer-events: none;
+}
+
+.machine-gap-bulge {
+  position: absolute;
+  bottom: calc(-1 * var(--machine-gap-top-radius));
+  width: calc(var(--machine-gap-top-radius) * 2);
+  height: calc(var(--machine-gap-top-radius) * 2);
+  border-radius: 50%;
+  background: var(--cabinet-slot);
+  pointer-events: none;
+}
+
+.machine-gap-bulge--bl {
+  left: calc(-1 * var(--machine-gap-top-radius));
+  clip-path: polygon(50% 50%, 50% 100%, 0 100%, 0 50%);
+}
+
+.machine-gap-bulge--br {
+  right: calc(-1 * var(--machine-gap-top-radius));
+  clip-path: polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%);
+}
+
+.machine-ceiling {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.machine-ceiling__surface {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    var(--ix-front-l) var(--ix-y-gap7-bottom),
+    var(--ix-front-r) var(--ix-y-gap7-bottom),
+    var(--ix-back-r) var(--ix-y-back-top),
+    var(--ix-back-l) var(--ix-y-back-top)
+  );
+  background: var(--struct-ceiling);
+  box-shadow: inset 0 -6% 12% rgb(255 255 255 / 55%);
+}
+
+.machine-ceiling__surface::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--ix-y-gap7-bottom) + 1.2%);
+  left: 12%;
+  right: 12%;
+  height: 2.4%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8aa8c8 0%, #d8e4f2 45%, #8aa8c8 100%);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 45%),
+    0 2px 6px rgb(0 0 0 / 12%);
+}
+
+/* ── Floor & bottom slot ── */
+
+.machine-floor__gap {
+  position: absolute;
+  top: var(--ix-y-gap6-top);
+  right: calc(100% - var(--ix-gap-front-r));
+  bottom: 0;
+  left: var(--ix-gap-front-l);
+  z-index: 5;
+  overflow: visible;
+  border-radius: 0 0 var(--machine-gap-top-radius) var(--machine-gap-top-radius);
+  background: var(--struct-floor-gap);
+  pointer-events: none;
+}
+
+.machine-floor {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.machine-floor__surface {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    var(--ix-back-l) var(--ix-y-back-bottom),
+    var(--ix-back-r) var(--ix-y-back-bottom),
+    var(--ix-front-r) var(--ix-y-gap6-top),
+    var(--ix-chute-front-r) var(--ix-y-gap6-top),
+    var(--ix-chute-front-r) var(--ix-y-inner-bottom),
+    var(--ix-chute-front-l) var(--ix-y-inner-bottom),
+    var(--ix-chute-front-l) var(--ix-y-gap6-top),
+    var(--ix-front-l) var(--ix-y-gap6-top)
+  );
+  background:
+    linear-gradient(180deg, var(--interior-floor-shine) 0%, var(--struct-floor) 42%, #ffd9c7 100%);
+  box-shadow: inset 0 10% 16% rgb(255 255 255 / 28%);
+}
+
+/* ── Discharge chute ── */
+
+.machine-chute__drop,
+.machine-chute__lip {
+  background: var(--struct-chute-fill);
+}
+
+.machine-chute__drop {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  clip-path: polygon(
+    var(--ix-chute-front-l) calc(var(--ix-y-gap6-top) - 0.12%),
+    var(--ix-chute-front-r) calc(var(--ix-y-gap6-top) - 0.12%),
+    var(--ix-chute-front-r) var(--ix-y-inner-bottom),
+    var(--ix-chute-front-l) var(--ix-y-inner-bottom)
+  );
+  box-shadow:
+    inset 0 0 0 3px var(--struct-chute-rim),
+    inset 0 2px 5px rgb(255 255 255 / 11%),
+    inset 0 -14px 22px rgb(0 0 0 / 48%),
+    inset 3px 0 10px rgb(0 0 0 / 22%),
+    inset -3px 0 10px rgb(0 0 0 / 22%);
+  pointer-events: none;
+}
+
+.machine-chute {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.machine-chute__lip {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    var(--ix-inner-back-l) var(--ix-y-inner-floor-top),
+    var(--ix-inner-back-r) var(--ix-y-inner-floor-top),
+    var(--ix-inner-front-r) calc(var(--ix-y-gap6-top) + 0.12%),
+    var(--ix-inner-front-l) calc(var(--ix-y-gap6-top) + 0.12%)
+  );
+  box-shadow:
+    inset 0 0 0 3px var(--struct-chute-rim),
+    inset 0 2px 5px rgb(255 255 255 / 12%),
+    inset 0 -16px 24px rgb(0 0 0 / 44%),
+    inset 3px 0 12px rgb(0 0 0 / 24%),
+    inset -3px 0 12px rgb(0 0 0 / 24%),
+    0 0 0 2px rgb(90 100 120 / 48%),
+    0 4px 12px rgb(0 0 0 / 28%);
+}
+
+.machine-chute-edges {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  pointer-events: none;
+}
+
+.machine-chute-edges__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.machine-chute-edges__line {
+  stroke: rgb(126 200 255 / 42%);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+/* ── Glass reflection overlay ── */
+
+.machine-glass-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.machine-glass-overlay__sheen {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(118deg, rgb(255 255 255 / 24%) 0%, transparent 36%, transparent 58%, rgb(255 255 255 / 10%) 100%),
+    linear-gradient(180deg, rgb(255 255 255 / 12%) 0%, transparent 22%, transparent 78%, rgb(0 0 0 / 6%) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.78;
+}
+
+.machine-glass-overlay__glare {
+  position: absolute;
+  top: 7%;
+  left: -8%;
+  width: 52%;
+  height: 56%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 22%) 0%, transparent 68%);
+  transform: rotate(-10deg);
+  filter: blur(0.4px);
+}
+
+.machine-glass-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 14%),
+    inset 0 1.8% 0 rgb(255 255 255 / 22%);
+  border-radius: 1%;
+}

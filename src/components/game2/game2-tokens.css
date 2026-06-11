@@ -1,0 +1,8 @@
+:root {
+  --g2-aspect-w: 576;
+  --g2-aspect-h: 1024;
+
+  --g2-claw-x: 50%;
+  --g2-claw-rail-y: 16%;
+  --g2-claw-cable-length: 14%;
+}
