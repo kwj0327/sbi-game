@@ -98,6 +98,12 @@ export type Game2ClawState = {
  * 🟢 GAME2_CLAW_ZONE — 집게가 움직일 수 있는 영역 (초록 가이드)
  */
 
+/** 바닥 가이드 표시(영역 선·격자·번호) — 다시 켤 때까지 false */
+export const GAME2_SHOW_FLOOR_GUIDES = false
+
+/** @deprecated GAME2_SHOW_FLOOR_GUIDES */
+export const GAME2_SHOW_ZONE_GUIDES = GAME2_SHOW_FLOOR_GUIDES
+
 /** 🟡 배출구 영역 — 낙하·집게 배출 이동 목표 */
 export const GAME2_CHUTE_ZONE = {
   centerX: 24,

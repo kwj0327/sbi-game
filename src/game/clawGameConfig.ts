@@ -10,7 +10,7 @@ import game1Doll09 from '../assets/dolls/game1-doll-09.png'
 import game1Doll10 from '../assets/dolls/game1-doll-10.png'
 
 export const DOLL_COUNT = 10
-export const SPIN_SPEED = 0.12
+export const SPIN_SPEED = 0.168
 export const HIT_TOLERANCE_RAD = 0.065
 export const ROD_STRIKE_DURATION_MS = 450
 export const RESULT_DELAY_MS = 1200

@@ -1,3 +1,4 @@
+import { GAME2_SHOW_FLOOR_GUIDES } from '../../game/game2Config'
 import {
   getGame2ChuteOutline,
   getGame2ClawZoneOutline,
@@ -15,9 +16,8 @@ function toPolygonPoints(corners: { x: number; y: number }[]) {
 
 /** 🟢 집게 · 🔴 인형 · 🟡 배출구 · 격자 가이드 — stage 좌표 % */
 export function Game2FloorGuide() {
-  const clawZone = getGame2ClawZoneOutline()
-  const dollZone = getGame2DollZoneOutline()
-  const chute = getGame2ChuteOutline()
+  if (!GAME2_SHOW_FLOOR_GUIDES) return null
+
   const gridCells = getGame2PlayGridCells()
 
   return (
@@ -45,17 +45,17 @@ export function Game2FloorGuide() {
 
       <polyline
         className="g2-floor-guide__edge g2-floor-guide__edge--claw-zone"
-        points={toPolylinePoints(clawZone)}
+        points={toPolylinePoints(getGame2ClawZoneOutline())}
         fill="none"
       />
       <polyline
         className="g2-floor-guide__edge g2-floor-guide__edge--doll-zone"
-        points={toPolylinePoints(dollZone)}
+        points={toPolylinePoints(getGame2DollZoneOutline())}
         fill="none"
       />
       <polyline
         className="g2-floor-guide__edge g2-floor-guide__edge--chute"
-        points={toPolylinePoints(chute)}
+        points={toPolylinePoints(getGame2ChuteOutline())}
         fill="none"
       />
     </svg>
