@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { BottomButtons } from '../components/claw-game/BottomButtons'
+import { ClawGameSuccessPopup } from '../components/claw-game/ClawGameSuccessPopup'
 import { InstructionBar } from '../components/claw-game/InstructionBar'
 import { MachineViewport } from '../components/claw-game/MachineViewport'
 import { applyStageContentVars } from '../game/stageContentRect'
@@ -12,6 +13,7 @@ import type { DollState, GamePhase } from '../components/claw-game/types'
 import { MobileLayout } from '../components/MobileLayout'
 import {
   DOLL_COUNT,
+  DOLL_IMAGES,
   ARC,
   RESULT_DELAY_MS,
   ROD_STRIKE_DURATION_MS,
@@ -48,6 +50,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
   const [trackOffset, setTrackOffset] = useState(0)
   const [rodProgress, setRodProgress] = useState(0)
   const [resultMessage, setResultMessage] = useState('')
+  const [successDollIndex, setSuccessDollIndex] = useState<number | null>(null)
   const [strikeTargetIndex, setStrikeTargetIndex] = useState<number | null>(null)
   const [dolls, setDolls] = useState<DollState[]>(
     () => Array.from({ length: DOLL_COUNT }, () => ({ captured: false, falling: false, clipOpen: false })),
@@ -139,6 +142,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
     setStrikeTargetIndex(null)
     setRodProgress(0)
     setResultMessage('')
+    setSuccessDollIndex(null)
     setPhase('spinning')
   }, [])
 
@@ -184,7 +188,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
             index === strike.index ? { ...doll, clipOpen: true, falling: true } : doll,
           ),
         )
-        setResultMessage('성공! 인형을 뽑았어요')
+        setResultMessage('인형이 떨어지는 중…')
       } else {
         setResultMessage('실패! 집게를 맞추지 못했어요')
       }
@@ -201,6 +205,9 @@ export function ClawGame({ onExit }: ClawGameProps) {
                 : doll,
             ),
           )
+          setSuccessDollIndex(strike.index)
+          setResultMessage('성공! 인형을 뽑았어요')
+          return
         }
         resetRound()
       }, strike.isHit ? DOLL_FALL_SEQUENCE_MS : RESULT_DELAY_MS)
@@ -228,7 +235,8 @@ export function ClawGame({ onExit }: ClawGameProps) {
     >
       <div className="claw-game">
         <InstructionBar message={instruction} />
-        <MachineViewport
+        <div className="claw-game__machine">
+          <MachineViewport
             orbitRef={orbitRef}
             phase={phase}
             rodProgress={rodProgress}
@@ -237,7 +245,14 @@ export function ClawGame({ onExit }: ClawGameProps) {
             strikeTargetIndex={strikeTargetIndex}
             orbitSize={orbitSize}
             orbitScale={orbitScale}
-        />
+          />
+          {successDollIndex !== null ? (
+            <ClawGameSuccessPopup
+              imageSrc={DOLL_IMAGES[successDollIndex % DOLL_IMAGES.length]}
+              onConfirm={resetRound}
+            />
+          ) : null}
+        </div>
       </div>
     </MobileLayout>
   )

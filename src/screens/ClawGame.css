@@ -6,6 +6,14 @@
   min-height: 0;
 }
 
+.claw-game__machine {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .claw-game .machine-viewport {
   width: calc(100% + 2 * var(--main-pad-x, 16px) + var(--safe-left) + var(--safe-right));
   max-width: var(--app-max-width);
