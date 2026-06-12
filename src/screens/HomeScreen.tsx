@@ -1,5 +1,7 @@
 import { MobileLayout } from '../components/MobileLayout'
+import { DOLL_COUNT } from '../game/clawGameConfig'
 import { GAMES, type GameId } from '../game/games'
+import { useDollCollection } from '../hooks/useDollCollection'
 import '../App.css'
 
 type HomeScreenProps = {
@@ -7,6 +9,7 @@ type HomeScreenProps = {
 }
 
 export function HomeScreen({ onSelectGame }: HomeScreenProps) {
+  const { summary } = useDollCollection(DOLL_COUNT)
   return (
     <MobileLayout
       scrollable
@@ -65,12 +68,12 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
 
       <section className="stats">
         <article className="stat-card">
-          <span className="stat-card__value">0</span>
-          <span className="stat-card__label">플레이 횟수</span>
+          <span className="stat-card__value">{summary.total}</span>
+          <span className="stat-card__label">획득 인형</span>
         </article>
         <article className="stat-card">
-          <span className="stat-card__value">0</span>
-          <span className="stat-card__label">최고 점수</span>
+          <span className="stat-card__value">{summary.uniqueCount}</span>
+          <span className="stat-card__label">수집 종류</span>
         </article>
         <article className="stat-card">
           <span className="stat-card__value">-</span>

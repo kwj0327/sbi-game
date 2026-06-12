@@ -1,0 +1,139 @@
+.game3 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px 28px;
+}
+
+.game3__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 18px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+}
+
+.game3__hero {
+  display: block;
+  width: min(168px, 52vw);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 10%));
+}
+
+.game3__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.game3__subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text-muted);
+  white-space: pre-line;
+}
+
+.game3__reset {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 4px;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.game3__reset:active {
+  transform: scale(0.98);
+  background: var(--color-surface-elevated);
+}
+
+.game3__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game3-doll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.game3-doll__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 4%);
+}
+
+.game3-doll--collected .game3-doll__frame {
+  border-color: rgb(var(--color-primary-rgb) / 22%);
+  background:
+    radial-gradient(circle at 50% 30%, rgb(var(--color-primary-rgb) / 10%) 0%, transparent 68%),
+    var(--color-surface);
+}
+
+.game3-doll--locked .game3-doll__image {
+  opacity: 0.28;
+  filter: grayscale(1);
+}
+
+.game3-doll__image {
+  display: block;
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}
+
+.game3-doll__lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  opacity: 0.72;
+}
+
+.game3-doll__count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 28px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  background: var(--color-primary);
+  box-shadow: 0 4px 10px rgb(var(--color-primary-rgb) / 28%);
+}
+
+.game3-doll__label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.game3-doll--collected .game3-doll__label {
+  color: var(--color-text);
+}

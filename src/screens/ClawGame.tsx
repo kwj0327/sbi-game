@@ -11,6 +11,7 @@ import {
 } from '../components/claw-game/constants'
 import type { DollState, GamePhase } from '../components/claw-game/types'
 import { MobileLayout } from '../components/MobileLayout'
+import { addCollectedDoll } from '../game/dollCollection'
 import {
   DOLL_COUNT,
   DOLL_IMAGES,
@@ -206,6 +207,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
             ),
           )
           setSuccessDollIndex(strike.index)
+          addCollectedDoll(strike.index, 'claw')
           setResultMessage('성공! 인형을 뽑았어요')
           return
         }

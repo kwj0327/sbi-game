@@ -5,6 +5,7 @@ import { Game2PlayControls } from '../components/game2/Game2PlayControls'
 import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
 import { DOLL_IMAGES } from '../game/clawGameConfig'
+import { addCollectedDoll } from '../game/dollCollection'
 import { GAME2_CLAW, getGame2ChuteFallSequenceMs, type Game2ClawPhase, type Game2ClawState } from '../game/game2Config'
 import {
   createInitialGame2Dolls,
@@ -233,11 +234,14 @@ export function Game2({ onExit }: Game2Props) {
 
         window.setTimeout(() => {
           setDolls((prev) =>
-            prev.map((doll) =>
-              doll.id === heldId
-                ? { ...doll, falling: false, captured: true }
-                : doll,
-            ),
+            prev.map((doll) => {
+              if (doll.id !== heldId) return doll
+
+              const dollIndex = DOLL_IMAGES.indexOf(doll.imageSrc)
+              if (dollIndex >= 0) addCollectedDoll(dollIndex, 'game2')
+
+              return { ...doll, falling: false, captured: true }
+            }),
           )
         }, getGame2ChuteFallSequenceMs())
       }
