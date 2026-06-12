@@ -1,16 +1,14 @@
-import game1Doll01 from '../assets/dolls/game1-doll-01.png'
-import game1Doll02 from '../assets/dolls/game1-doll-02.png'
-import game1Doll03 from '../assets/dolls/game1-doll-03.png'
-import game1Doll04 from '../assets/dolls/game1-doll-04.png'
-import game1Doll05 from '../assets/dolls/game1-doll-05.png'
-import game1Doll06 from '../assets/dolls/game1-doll-06.png'
-import game1Doll07 from '../assets/dolls/game1-doll-07.png'
-import game1Doll08 from '../assets/dolls/game1-doll-08.png'
-import game1Doll09 from '../assets/dolls/game1-doll-09.png'
-import game1Doll10 from '../assets/dolls/game1-doll-10.png'
 import { ROD_WIDTH_PX } from '../components/claw-game/constants'
+import { ALL_DOLL_IMAGES, GAME1_SLOT_COUNT } from './dollConfig'
 
-export const DOLL_COUNT = 10
+export {
+  ALL_DOLL_COUNT,
+  ALL_DOLL_IMAGES,
+  GAME1_SLOT_COUNT,
+  pickRandomGame1DollIndices,
+} from './dollConfig'
+
+export const DOLL_COUNT = GAME1_SLOT_COUNT
 export const SPIN_SPEED = 0.19
 /** clip·막대 폭(10px) 기준 — 기존 26px clip 튜닝(0.065 rad)에서 비례 축소 */
 export const HIT_TOLERANCE_RAD = 0.065 * (ROD_WIDTH_PX / 26)
@@ -31,19 +29,8 @@ export const DOLL_EMOJIS = [
   '🐷',
 ] as const
 
-/** Game 1 회전 레일 인형 스프라이트 (Game 2는 DOLL_EMOJIS 유지) */
-export const DOLL_IMAGES = [
-  game1Doll01,
-  game1Doll02,
-  game1Doll03,
-  game1Doll04,
-  game1Doll05,
-  game1Doll06,
-  game1Doll07,
-  game1Doll08,
-  game1Doll09,
-  game1Doll10,
-] as const
+/** @deprecated ALL_DOLL_IMAGES 사용 */
+export const DOLL_IMAGES = ALL_DOLL_IMAGES
 
 /**
  * 정면 뷰: 상단 레일 위 집게, 인형은 아래로 매달림

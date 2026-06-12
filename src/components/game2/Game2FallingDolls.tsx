@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { GAME2_CHUTE_FALL } from '../../game/game2Config'
+import { GAME2_CHUTE_FALL, GAME2_DROP } from '../../game/game2Config'
 import { computeGame2FallToChute } from '../../game/game2ChuteFallGeometry'
 import type { Game2DollState } from '../../game/game2PlayArea'
 import './game2-falling-doll.css'
@@ -39,16 +39,28 @@ export function Game2FallingDolls({
       aria-hidden="true"
     >
       {falling.map((doll) => {
+        const isFloorFall = doll.fallKind === 'floor'
+
         if (!fallCacheRef.current.has(doll.id)) {
           fallCacheRef.current.set(
             doll.id,
-            computeGame2FallToChute(
-              playfieldW,
-              playfieldH,
-              doll.xPercent,
-              doll.playY,
-              stageScale,
-            ),
+            isFloorFall
+              ? {
+                  fallToCenterX:
+                    (((doll.fallTargetXPercent ?? doll.xPercent) - doll.xPercent) /
+                      100) *
+                    playfieldW,
+                  fallToChuteY:
+                    (((doll.fallTargetPlayY ?? doll.playY) - doll.playY) / 100) *
+                    playfieldH,
+                }
+              : computeGame2FallToChute(
+                  playfieldW,
+                  playfieldH,
+                  doll.xPercent,
+                  doll.playY,
+                  stageScale,
+                ),
           )
         }
 
@@ -58,7 +70,7 @@ export function Game2FallingDolls({
         return (
           <span
             key={doll.id}
-            className="g2-dolls__item g2-dolls__item--falling"
+            className={`g2-dolls__item ${isFloorFall ? 'g2-dolls__item--falling-floor' : 'g2-dolls__item--falling'}`}
             style={{
               left: `${doll.xPercent}%`,
               top: `${doll.playY}%`,
@@ -68,6 +80,12 @@ export function Game2FallingDolls({
               ['--fall-to-center-x' as string]: `${fall.fallToCenterX}px`,
               ['--fall-to-chute' as string]: `${fall.fallToChuteY}px`,
               ['--g2-fall-scale-end' as string]: `${scaleEnd}`,
+              ...(isFloorFall
+                ? {
+                    ['--g2-fall-duration' as string]: `${GAME2_DROP.fallDurationMs}ms`,
+                    ['--g2-fall-rotate-end' as string]: `${doll.fallEndRotateDeg ?? doll.rotateDeg}deg`,
+                  }
+                : {}),
             }}
           >
             <img

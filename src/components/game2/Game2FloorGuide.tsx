@@ -1,4 +1,4 @@
-import { GAME2_SHOW_FLOOR_GUIDES } from '../../game/game2Config'
+import { GAME2_SHOW_DOLL_ZONE_GUIDE_ONLY, GAME2_SHOW_FLOOR_GUIDES } from '../../game/game2Config'
 import {
   getGame2ChuteOutline,
   getGame2ClawZoneOutline,
@@ -43,19 +43,23 @@ export function Game2FloorGuide() {
         </g>
       ))}
 
-      <polyline
-        className="g2-floor-guide__edge g2-floor-guide__edge--claw-zone"
-        points={toPolylinePoints(getGame2ClawZoneOutline())}
-        fill="none"
-      />
+      {!GAME2_SHOW_DOLL_ZONE_GUIDE_ONLY ? (
+        <>
+          <polyline
+            className="g2-floor-guide__edge g2-floor-guide__edge--claw-zone"
+            points={toPolylinePoints(getGame2ClawZoneOutline())}
+            fill="none"
+          />
+          <polyline
+            className="g2-floor-guide__edge g2-floor-guide__edge--chute"
+            points={toPolylinePoints(getGame2ChuteOutline())}
+            fill="none"
+          />
+        </>
+      ) : null}
       <polyline
         className="g2-floor-guide__edge g2-floor-guide__edge--doll-zone"
         points={toPolylinePoints(getGame2DollZoneOutline())}
-        fill="none"
-      />
-      <polyline
-        className="g2-floor-guide__edge g2-floor-guide__edge--chute"
-        points={toPolylinePoints(getGame2ChuteOutline())}
         fill="none"
       />
     </svg>

@@ -287,22 +287,31 @@
   transition: none;
 }
 
+/* 오므림 시뮬레이션 중 — 프레임 단위 gripT와 시각을 동기화 */
+.g2-claw--closing .g2-claw__arm,
+.g2-claw--closing .g2-claw__arm-upper,
+.g2-claw--closing .g2-claw__arm-lower,
+.g2-claw--closing .g2-claw__arm-joint,
+.g2-claw--closing .g2-claw__tip {
+  transition: none;
+}
+
 .g2-claw--descending .g2-claw__rig {
   transition: none;
 }
 
 .g2-claw__held-doll {
   position: absolute;
-  left: 50%;
-  top: 94%;
+  left: calc(50% + var(--g2-held-off-x, 0%));
+  top: calc(94% + var(--g2-held-off-y, 0%));
   z-index: 4;
-  transform: translate(-50%, -42%) scaleX(var(--g2-doll-face-x, 1))
-    rotate(var(--g2-held-rotate, 0deg));
+  transform: translate(-50%, -42%) scale(var(--g2-held-scale, 1))
+    scaleX(var(--g2-doll-face-x, 1)) rotate(var(--g2-held-rotate, 0deg));
   transform-origin: center center;
   filter: drop-shadow(0 3px 6px rgb(0 0 0 / 18%));
   pointer-events: none;
 }
 
 .g2-claw--carrying.g2-claw--closed .g2-claw__held-doll {
-  top: 96%;
+  top: calc(96% + var(--g2-held-off-y, 0%));
 }

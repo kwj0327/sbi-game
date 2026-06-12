@@ -109,6 +109,7 @@ export const Game2Viewport = forwardRef<Game2ViewportHandle, Game2ViewportProps>
                     imageSrc: heldDoll.imageSrc,
                     rotateDeg: heldDoll.rotateDeg,
                     faceScaleX: heldDoll.faceScaleX,
+                    depthScale: heldDoll.depthScale,
                   }
                 : null
             }

@@ -10,6 +10,7 @@ type MachineMechanismLayerProps = {
   phase: GamePhase
   rodHeightPx: number
   visibleDolls: VisibleDoll[]
+  sessionDollIndices: readonly number[]
   strikeTargetIndex: number | null
   orbitSize: OrbitSize
   orbitScale: number
@@ -21,6 +22,7 @@ export function MachineMechanismLayer({
   phase,
   rodHeightPx,
   visibleDolls,
+  sessionDollIndices,
   strikeTargetIndex,
   orbitSize,
   orbitScale,
@@ -34,13 +36,19 @@ export function MachineMechanismLayer({
           <RotatingRail />
           <HangingDolls
             dolls={visibleDolls}
+            sessionDollIndices={sessionDollIndices}
             strikeTargetIndex={strikeTargetIndex}
             phase={phase}
           />
         </div>
       </div>
 
-      <FallingDollLayer dolls={visibleDolls} orbitSize={orbitSize} orbitScale={orbitScale} />
+      <FallingDollLayer
+        dolls={visibleDolls}
+        sessionDollIndices={sessionDollIndices}
+        orbitSize={orbitSize}
+        orbitScale={orbitScale}
+      />
     </>
   )
 }

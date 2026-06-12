@@ -1,5 +1,5 @@
 import { MobileLayout } from '../components/MobileLayout'
-import { DOLL_COUNT } from '../game/clawGameConfig'
+import { ALL_DOLL_COUNT } from '../game/dollConfig'
 import { GAMES, type GameId } from '../game/games'
 import { useDollCollection } from '../hooks/useDollCollection'
 import '../App.css'
@@ -9,7 +9,7 @@ type HomeScreenProps = {
 }
 
 export function HomeScreen({ onSelectGame }: HomeScreenProps) {
-  const { summary } = useDollCollection(DOLL_COUNT)
+  const { summary } = useDollCollection(ALL_DOLL_COUNT)
   return (
     <MobileLayout
       scrollable

@@ -11,6 +11,7 @@ type MachineViewportProps = {
   rodProgress: number
   rodTravelPx: number
   visibleDolls: VisibleDoll[]
+  sessionDollIndices: readonly number[]
   strikeTargetIndex: number | null
   orbitSize: OrbitSize
   orbitScale: number
@@ -22,6 +23,7 @@ export function MachineViewport({
   rodProgress,
   rodTravelPx,
   visibleDolls,
+  sessionDollIndices,
   strikeTargetIndex,
   orbitSize,
   orbitScale,
@@ -39,6 +41,7 @@ export function MachineViewport({
             phase={phase}
             rodHeightPx={rodHeightPx}
             visibleDolls={visibleDolls}
+            sessionDollIndices={sessionDollIndices}
             strikeTargetIndex={strikeTargetIndex}
             orbitSize={orbitSize}
             orbitScale={orbitScale}

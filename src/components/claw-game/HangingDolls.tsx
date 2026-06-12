@@ -1,14 +1,16 @@
-import { DOLL_IMAGES } from '../../game/clawGameConfig'
+import { ALL_DOLL_IMAGES } from '../../game/dollConfig'
 import type { GamePhase, VisibleDoll } from './types'
 
 type HangingDollsProps = {
   dolls: VisibleDoll[]
+  sessionDollIndices: readonly number[]
   strikeTargetIndex: number | null
   phase: GamePhase
 }
 
 export function HangingDolls({
   dolls,
+  sessionDollIndices,
   strikeTargetIndex,
   phase,
 }: HangingDollsProps) {
@@ -47,7 +49,7 @@ export function HangingDolls({
                 />
                 <div className="machine-dolls__string" aria-hidden="true" />
                 <img
-                  src={DOLL_IMAGES[index % DOLL_IMAGES.length]}
+                  src={ALL_DOLL_IMAGES[sessionDollIndices[index]]}
                   alt=""
                   className="machine-dolls__emoji"
                   aria-hidden="true"

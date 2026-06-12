@@ -38,8 +38,90 @@ export const GAME2_CLAW = {
 
 /** 착지·집기 (난이도 튜닝은 추후) */
 export const GAME2_GRAB = {
-  /** 집게 play 좌표 기준 잡기 반경 (stage %) */
+  /** 집게 play 좌표 기준 잡기 반경 (stage %) — 알파 마스크 미로드 시 폴백 */
   maxRadius: 10,
+  /** 착지점이 부위에서 이 거리 안에 있어야 함 (stage 디자인 px) */
+  tipRadiusPx: 8,
+  /** 잡힘으로 인정할 최소 알파 (0–255) */
+  alphaThreshold: 40,
+  /** 감싸기 판정 — 부위 가장자리가 벌린 팁 안쪽으로 이만큼 여유가 있어야 함 (디자인 px) */
+  straddleMarginPx: 2,
+  /** 물림 판정 — 완전 오므림 간격보다 부위가 이만큼 이상 얇으면 미끄러져 실패 (디자인 px) */
+  slipTolerancePx: 4,
+} as const
+
+/**
+ * 잡은 부위 두께 → 집게 오므림 정도.
+ * 집게 팁 사이 실제 간격이 부위 두께와 일치하도록 포즈를 역산한다.
+ */
+export const GAME2_GRIP = {
+  /** 팁이 부위 표면을 파고드는 양 (디자인 px) — 클수록 더 꽉 잡는 느낌 */
+  squeezePx: 4,
+  /** 마스크 미로드 등으로 측정 실패 시 가정할 두께 (디자인 px) */
+  fallbackWidthPx: 28,
+} as const
+
+/**
+ * 오므림 시뮬레이션 — 사전 판정 없음.
+ * 집게는 그냥 닫히고, 닫히는 과정에서 팁이 인형에 닿으면 인형이 밀리거나
+ * 기울거나 쓰러지며, 양 팁이 단단히 물었을 때만 잡힌 것으로 확정된다.
+ */
+export const GAME2_CLOSE_SIM = {
+  /** 완전히 오므리는 데 걸리는 시간 (ms) */
+  closeDurationMs: 550,
+  /** 팁 접촉 시 인형이 밀리는 비율 (팁 이동량 대비, 1 미만 = 팁이 파고들며 밀림) */
+  pushFactor: 0.8,
+  /** 밀릴 때 앞뒤(깊이 방향)로 빠져나가는 비율 (팁 이동량 대비) */
+  escapeFactor: 0.5,
+  /** 밀릴 때 기울어지는 정도 (밀림 px당 deg) */
+  tiltDegPerPx: 0.9,
+  /** 누적 기울기가 이 값을 넘으면 쓰러짐 (deg) */
+  toppleThresholdDeg: 16,
+  /** 쓰러질 때 추가 회전 범위 (deg) */
+  toppleExtraDegMin: 65,
+  toppleExtraDegMax: 105,
+  /** 쓰러짐 회전 속도 (deg/ms) */
+  toppleSpeedDegPerMs: 0.45,
+  /** 물림 중심이 부위 중심에서 이 비율(반폭 대비) 이상 벗어나면 미끄러짐 */
+  pinchOffsetSlipRatio: 0.45,
+  /** 정중앙 물림도 이 확률로는 미끄러짐 */
+  pinchSlipBaseChance: 0.12,
+  /** 미끄러질 때 받는 즉시 깊이 방향 킥 (디자인 px) */
+  slipKickPx: 7,
+  /** 미끄러진 인형의 깊이 방향 드리프트 (px/ms) */
+  slipDriftPxPerMs: 0.035,
+  /** 미끄러질 때 쓰러질 확률 */
+  slipToppleChance: 0.65,
+  /** 팁 접촉 프로브 세로 반경 (디자인 px) */
+  probeHalfHeightPx: 6,
+  /** 팁 안쪽 접촉 여유 (디자인 px) */
+  probeInsetPx: 2,
+  /** 양 팁이 물었을 때 추가로 조이는 양 (gripT) */
+  squeezeT: 0.04,
+  /** 인형이 물림에서 빠져나가는 순간 집게가 도로 벌어지는 양 (gripT) */
+  slipReopenT: 0.26,
+  /** 오므림 종료 후 상승까지 대기 (ms) */
+  holdAfterCloseMs: 350,
+} as const
+
+/**
+ * 이동 중 낙하 — 잡았어도 끝이 아님.
+ * 물림 품질(0–1)이 낮을수록 들어 올릴 때·운반 중에 잘 떨어진다.
+ */
+export const GAME2_DROP = {
+  /** 들어 올리는 중 낙하 확률 — 품질 1일 때 / 품질 0일 때 */
+  liftDropChanceMin: 0.04,
+  liftDropChanceMax: 0.55,
+  /** 배출구 운반 중 초당 낙하 확률 — 품질 1일 때 / 품질 0일 때 */
+  carryDropPerSecMin: 0.02,
+  carryDropPerSecMax: 0.45,
+  /** 배출구 거리 가중치 — 멀 때 ×far, 바로 위에서 ×near (가까울수록 잘 떨어짐) */
+  chuteDistanceFactorFar: 0.4,
+  chuteDistanceFactorNear: 1.7,
+  /** 바닥 낙하 연출 시간 (ms) */
+  fallDurationMs: 420,
+  /** 떨어진 인형이 쓰러진 채 착지할 확률 */
+  dropToppleChance: 0.8,
 } as const
 
 export const GAME2_CLAW_POSE = {
@@ -88,6 +170,13 @@ export type Game2ClawState = {
   descendT: number
   /** 집게에 붙어 있는 인형 id · 없으면 null */
   heldDollId: number | null
+  /** 닫힘 포즈 보간 — 0: 완전 오므림(빈 집게) … 1: open 포즈. 잡은 부위 두께로 결정 */
+  gripT: number
+  /** 잡은 순간 인형 중심 − 기본 부착점 (playfield %) — 인형이 제자리에 머물게 보정 */
+  heldOffsetX: number
+  heldOffsetY: number
+  /** 물림 품질 0–1 (1 = 정중앙) — 이동 중 낙하 확률에 사용 */
+  heldGripQuality: number
 }
 
 /**
@@ -100,6 +189,9 @@ export type Game2ClawState = {
 
 /** 바닥 가이드 표시(영역 선·격자·번호) — 다시 켤 때까지 false */
 export const GAME2_SHOW_FLOOR_GUIDES = false
+
+/** true면 인형 영역(격자·빨간 경계)만 — 집게·배출구 가이드 숨김 */
+export const GAME2_SHOW_DOLL_ZONE_GUIDE_ONLY = false
 
 /** @deprecated GAME2_SHOW_FLOOR_GUIDES */
 export const GAME2_SHOW_ZONE_GUIDES = GAME2_SHOW_FLOOR_GUIDES
@@ -121,17 +213,17 @@ export const GAME2_FLOOR_CHUTE = GAME2_CHUTE_ZONE
  */
 export const GAME2_DOLL_ZONE = {
   floor: {
-    backY: 67,
-    frontY: 89,
-    backLeftX: 22,
-    backRightX: 78,
-    frontLeftX: 8,
+    backY: 66,
+    frontY: 86,
+    backLeftX: 24,
+    backRightX: 76,
+    frontLeftX: 18,
     /** 12번 격자·앞쪽 빨간 테두리 오른쪽 끝 (작을수록 테두리·12번 칸이 왼쪽으로) */
-    frontRightX: 87,
+    frontRightX: 82,
   },
   chuteClearance: {
-    top: 5.5,
-    left: 10,
+    top: 8,
+    left: 12,
     right: 6.5,
     bottom: 3.8,
   },
@@ -203,13 +295,24 @@ export function getGame2ChuteFallSequenceMs() {
 export const GAME2_PLAY_GRID = {
   cols: 4,
   rows: 3,
+  /** 행 경계 depth 0~1 (뒤→앞). 균등 기본 [0, ⅓, ⅔, 1] */
+  rowSplits: [0, 0.32, 0.56, 1] as const,
+  /** 배출구 쪽 열(0·1) — 5·6번 중간줄 아래·9·10번 앞줄을 뒤로 밀어 chute와 겹침 방지 */
+  chuteColCount: 2,
+  chuteColRowSplits: [0, 0.32, 0.5, 0.9] as const,
 } as const
 
 /** 인형 영역 안 인형 수·표시 크기 */
 export const GAME2_DOLLS = {
   count: 10,
-  emojiSizePx: 72,
+  emojiSizePx: 104,
 } as const
+
+/** 알고리즘 작업용 — true면 인형을 doll zone 중앙에 고정 스폰 */
+export const GAME2_DEV_CENTER_SPAWN = false
+
+/** 알고리즘 작업용 — 0이면 인형 없음 (영역 가이드 확인용) */
+export const GAME2_SPAWN_DOLL_COUNT = 10
 
 export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   xPercent: GAME2_CLAW.defaultX,
@@ -218,4 +321,8 @@ export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   phase: 'idle',
   descendT: 0,
   heldDollId: null,
+  gripT: 0,
+  heldOffsetX: 0,
+  heldOffsetY: 0,
+  heldGripQuality: 1,
 }

@@ -13,8 +13,8 @@ import type { DollState, GamePhase } from '../components/claw-game/types'
 import { MobileLayout } from '../components/MobileLayout'
 import { addCollectedDoll } from '../game/dollCollection'
 import {
+  ALL_DOLL_IMAGES,
   DOLL_COUNT,
-  DOLL_IMAGES,
   ARC,
   RESULT_DELAY_MS,
   ROD_STRIKE_DURATION_MS,
@@ -23,6 +23,7 @@ import {
   getDollAngle,
   getDollVisual,
   getStrikeTarget,
+  pickRandomGame1DollIndices,
 } from '../game/clawGameConfig'
 import './ClawGame.css'
 
@@ -53,6 +54,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
   const [resultMessage, setResultMessage] = useState('')
   const [successDollIndex, setSuccessDollIndex] = useState<number | null>(null)
   const [strikeTargetIndex, setStrikeTargetIndex] = useState<number | null>(null)
+  const [sessionDollIndices] = useState(() => pickRandomGame1DollIndices())
   const [dolls, setDolls] = useState<DollState[]>(
     () => Array.from({ length: DOLL_COUNT }, () => ({ captured: false, falling: false, clipOpen: false })),
   )
@@ -207,7 +209,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
             ),
           )
           setSuccessDollIndex(strike.index)
-          addCollectedDoll(strike.index, 'claw')
+          addCollectedDoll(sessionDollIndices[strike.index], 'claw')
           setResultMessage('성공! 인형을 뽑았어요')
           return
         }
@@ -216,7 +218,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
     }
 
     requestAnimationFrame(animateRod)
-  }, [getCapturedFlags, resetRound])
+  }, [getCapturedFlags, resetRound, sessionDollIndices])
 
   const visibleDolls = useMemo(() => {
     return dolls
@@ -244,13 +246,14 @@ export function ClawGame({ onExit }: ClawGameProps) {
             rodProgress={rodProgress}
             rodTravelPx={rodTravelPx}
             visibleDolls={visibleDolls}
+            sessionDollIndices={sessionDollIndices}
             strikeTargetIndex={strikeTargetIndex}
             orbitSize={orbitSize}
             orbitScale={orbitScale}
           />
           {successDollIndex !== null ? (
             <ClawGameSuccessPopup
-              imageSrc={DOLL_IMAGES[successDollIndex % DOLL_IMAGES.length]}
+              imageSrc={ALL_DOLL_IMAGES[sessionDollIndices[successDollIndex]]}
               onConfirm={resetRound}
             />
           ) : null}

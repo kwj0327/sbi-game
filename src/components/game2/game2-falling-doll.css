@@ -10,6 +10,29 @@
   animation: g2-doll-fall-to-chute var(--g2-fall-duration, 1.2s) cubic-bezier(0.33, 0.82, 0.4, 1) forwards;
 }
 
+/* 운반 중 놓친 인형 — 바닥으로 떨어져 그대로 남음 (페이드·축소 없음) */
+.g2-dolls__item--falling-floor {
+  animation: g2-doll-fall-to-floor var(--g2-fall-duration, 0.42s) cubic-bezier(0.5, 0, 0.9, 0.6) forwards;
+}
+
+@keyframes g2-doll-fall-to-floor {
+  0% {
+    transform: translate(-50%, -50%)
+      scale(var(--g2-doll-scale, 1))
+      rotate(var(--g2-doll-rotate, 0deg));
+  }
+
+  100% {
+    transform: translate3d(
+        calc(-50% + var(--fall-to-center-x, 0px)),
+        calc(-50% + var(--fall-to-chute, 96px)),
+        0
+      )
+      scale(var(--g2-doll-scale, 1))
+      rotate(var(--g2-fall-rotate-end, var(--g2-doll-rotate, 0deg)));
+  }
+}
+
 @keyframes g2-doll-fall-to-chute {
   0% {
     transform: translate(-50%, -50%)

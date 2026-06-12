@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Game3ResetConfirm } from '../components/game3/Game3ResetConfirm'
 import { MobileLayout } from '../components/MobileLayout'
 import game3CollectionIcon from '../assets/game3-collection-icon.png'
-import { DOLL_COUNT, DOLL_IMAGES } from '../game/clawGameConfig'
+import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES } from '../game/dollConfig'
 import { clearCollectedDolls } from '../game/dollCollection'
 import { useDollCollection } from '../hooks/useDollCollection'
 import './Game3.css'
@@ -12,7 +12,7 @@ type Game3Props = {
 }
 
 export function Game3({ onExit }: Game3Props) {
-  const { summary } = useDollCollection(DOLL_COUNT)
+  const { summary } = useDollCollection(ALL_DOLL_COUNT)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const handleResetClick = () => {
@@ -38,7 +38,7 @@ export function Game3({ onExit }: Game3Props) {
           <h2 className="game3__title">획득한 인형</h2>
           <p className="game3__subtitle">
             {summary.total > 0
-              ? `${summary.total}개 수집 · ${summary.uniqueCount}/${DOLL_COUNT} 종류`
+              ? `${summary.total}개 수집 · ${summary.uniqueCount}/${ALL_DOLL_COUNT} 종류`
               : '아직 획득한 인형이 없어요.\n게임에서 인형을 뽑아 모아 보세요!'}
           </p>
           {summary.total > 0 ? (
@@ -49,7 +49,7 @@ export function Game3({ onExit }: Game3Props) {
         </header>
 
         <ul className="game3__grid" aria-label="인형 도감">
-          {DOLL_IMAGES.map((imageSrc, index) => {
+          {ALL_DOLL_IMAGES.map((imageSrc, index) => {
             const count = summary.countsByIndex[index] ?? 0
             const collected = count > 0
 

@@ -1,15 +1,21 @@
 import { useRef } from 'react'
-import { DOLL_IMAGES } from '../../game/clawGameConfig'
+import { ALL_DOLL_IMAGES } from '../../game/dollConfig'
 import { computeFallToChute } from './chuteFallGeometry'
 import type { OrbitSize, VisibleDoll } from './types'
 
 type FallingDollLayerProps = {
   dolls: VisibleDoll[]
+  sessionDollIndices: readonly number[]
   orbitSize: OrbitSize
   orbitScale: number
 }
 
-export function FallingDollLayer({ dolls, orbitSize, orbitScale }: FallingDollLayerProps) {
+export function FallingDollLayer({
+  dolls,
+  sessionDollIndices,
+  orbitSize,
+  orbitScale,
+}: FallingDollLayerProps) {
   const fallCacheRef = useRef(new Map<number, ReturnType<typeof computeFallToChute>>())
 
   const falling = dolls.filter(({ doll }) => doll.falling)
@@ -57,7 +63,7 @@ export function FallingDollLayer({ dolls, orbitSize, orbitScale }: FallingDollLa
               <div className="machine-dolls__clip" aria-hidden="true" />
               <div className="machine-dolls__string" aria-hidden="true" />
               <img
-                src={DOLL_IMAGES[index % DOLL_IMAGES.length]}
+                src={ALL_DOLL_IMAGES[sessionDollIndices[index]]}
                 alt=""
                 className="machine-dolls__emoji"
                 draggable={false}
