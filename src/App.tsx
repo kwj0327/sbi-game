@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { type GameId } from './game/games'
+import { GAMES, type GameId } from './game/games'
 import { ClawGame } from './screens/ClawGame'
 import { Game2 } from './screens/Game2'
 import { Game3 } from './screens/Game3'
 import { HomeScreen } from './screens/HomeScreen'
+import { PlaceholderGame } from './screens/PlaceholderGame'
 
 type Screen = 'home' | GameId
 
@@ -20,6 +21,19 @@ function App() {
 
   if (screen === 'game3') {
     return <Game3 onExit={() => setScreen('home')} />
+  }
+
+  if (screen === 'game4') {
+    const game = GAMES.find((entry) => entry.id === screen)
+    if (!game) return <HomeScreen onSelectGame={setScreen} />
+
+    return (
+      <PlaceholderGame
+        title={game.title}
+        emoji={game.emoji ?? '📝'}
+        onExit={() => setScreen('home')}
+      />
+    )
   }
 
   return <HomeScreen onSelectGame={setScreen} />
