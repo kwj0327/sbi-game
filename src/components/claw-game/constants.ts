@@ -11,8 +11,10 @@ export function getOrbitScale(stageWidth: number, stageHeight: number) {
 }
 
 /** machine-dolls CSS · chuteFallGeometry 와 동기화 */
-export const DOLL_CLIP_WIDTH_PX = 26
-export const DOLL_CLIP_HEIGHT_PX = 14
+/** machine-claw__rod 폭 — 인형 clip 과 동일 (맞추기 난이도) */
+export const ROD_WIDTH_PX = 10
+export const DOLL_CLIP_WIDTH_PX = ROD_WIDTH_PX
+export const DOLL_CLIP_HEIGHT_PX = 5
 export const DOLL_STRING_HEIGHT_PX = 36
 export const DOLL_EMOJI_SIZE_PX = 75
 export const DOLL_EMOJI_LEAD_PX = DOLL_CLIP_HEIGHT_PX + DOLL_STRING_HEIGHT_PX

@@ -8,10 +8,12 @@ import game1Doll07 from '../assets/dolls/game1-doll-07.png'
 import game1Doll08 from '../assets/dolls/game1-doll-08.png'
 import game1Doll09 from '../assets/dolls/game1-doll-09.png'
 import game1Doll10 from '../assets/dolls/game1-doll-10.png'
+import { ROD_WIDTH_PX } from '../components/claw-game/constants'
 
 export const DOLL_COUNT = 10
-export const SPIN_SPEED = 0.168
-export const HIT_TOLERANCE_RAD = 0.065
+export const SPIN_SPEED = 0.19
+/** clip·막대 폭(10px) 기준 — 기존 26px clip 튜닝(0.065 rad)에서 비례 축소 */
+export const HIT_TOLERANCE_RAD = 0.065 * (ROD_WIDTH_PX / 26)
 export const ROD_STRIKE_DURATION_MS = 450
 export const RESULT_DELAY_MS = 1200
 export const STRIKE_ANGLE = 0
