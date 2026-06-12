@@ -1,19 +1,23 @@
 import {
   GAME2_CLAW,
+  GAME2_CLAW_ZONE,
+  GAME2_CLAW_ZONE_CHUTE_CUTOUT,
+  GAME2_CHUTE_ZONE,
   GAME2_DOLLS,
+  GAME2_DOLL_ZONE_CHUTE_CUTOUT,
   GAME2_FLOOR,
-  GAME2_FLOOR_CHUTE,
   GAME2_GRAB,
-  GAME2_PLAY_AREA_CHUTE,
   GAME2_PLAY_GRID,
   GAME2_STAGE,
   type Game2ClawState,
 } from './game2Config'
 
 /**
- * Game 2 핵심 플레이 영역 — 인형뽑기 **안쪽** 바닥 (배출구 제외).
- * 집게 이동·인형 배치·낙하·판정 등 모든 게임플레이는 이 영역 기준.
- * 경계: GAME2_FLOOR 사다리꼴 − GAME2_PLAY_AREA_CHUTE (stage 좌표 %).
+ * Game 2 바닥 영역 geometry
+ *
+ * 🟡 GAME2_CHUTE_ZONE — 배출구
+ * 🔴 GAME2_DOLL_ZONE — 인형 배치·존재·집기
+ * 🟢 GAME2_CLAW_ZONE — 집게 idle 이동·좌표 클램프
  */
 export type Game2Point = { x: number; y: number }
 
@@ -50,6 +54,15 @@ type ChuteConfig = {
   height: number
 }
 
+type TrapezoidFloorConfig = {
+  backY: number
+  frontY: number
+  backLeftX: number
+  backRightX: number
+  frontLeftX: number
+  frontRightX: number
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
@@ -72,15 +85,31 @@ function getChuteBounds(chute: ChuteConfig) {
   return { leftX, topY, rightX, bottomY, width, height, centerX, centerY }
 }
 
-/** y 높이에서 플레이 영역 좌·우 x (원근) */
-function getPlayAreaSpanAtY(y: number) {
-  const { backY, frontY, backLeftX, backRightX, frontLeftX, frontRightX } = GAME2_FLOOR
-  const { topY, rightX: chuteRightX } = getGame2PlayAreaChuteBounds()
-  const leftMeetX = lerpX(backLeftX, backY, frontLeftX, frontY, topY)
-  const rightX = lerpX(backRightX, backY, frontRightX, frontY, y)
-  const leftX = y <= topY ? lerpX(backLeftX, backY, leftMeetX, topY, y) : chuteRightX
+function buildTrapezoidZoneOutline(
+  floor: TrapezoidFloorConfig,
+  chuteCutout: ChuteConfig,
+): Game2Point[] {
+  const { backY, frontY, backLeftX, backRightX, frontLeftX, frontRightX } = floor
+  const { leftX, topY, rightX } = getChuteBounds(chuteCutout)
 
-  return { leftX, rightX }
+  const leftMeetX = lerpX(backLeftX, backY, frontLeftX, frontY, topY)
+
+  const points: Game2Point[] = [
+    { x: backLeftX, y: backY },
+    { x: backRightX, y: backY },
+    { x: frontRightX, y: frontY },
+    { x: rightX, y: frontY },
+    { x: rightX, y: topY },
+    { x: leftX, y: topY },
+  ]
+
+  if (leftMeetX > leftX) {
+    points.push({ x: leftMeetX, y: topY })
+  }
+
+  points.push({ x: backLeftX, y: backY })
+
+  return points
 }
 
 function isPointInPolygon(point: Game2Point, polygon: Game2Point[]) {
@@ -101,20 +130,59 @@ function isPointInPolygon(point: Game2Point, polygon: Game2Point[]) {
   return inside
 }
 
-export function isPointInPlayArea(point: Game2Point) {
-  return isPointInPolygon(point, getGame2PlayAreaOutline())
+/** 🔴 인형 영역 안인지 */
+export function isPointInDollZone(point: Game2Point) {
+  return isPointInPolygon(point, getGame2DollZoneOutline())
 }
 
-/** depth y → 0(뒤) … 1(앞) */
-export function getPlayDepthT(y: number) {
-  const { backY, frontY } = GAME2_FLOOR
+/** 🟢 집게 이동 영역 안인지 */
+export function isPointInClawZone(point: Game2Point) {
+  return isPointInPolygon(point, getGame2ClawZoneOutline())
+}
+
+/** @deprecated isPointInDollZone 사용 */
+export function isPointInPlayArea(point: Game2Point) {
+  return isPointInDollZone(point)
+}
+
+function getZoneSpanAtY(
+  y: number,
+  floor: TrapezoidFloorConfig,
+  chuteCutout: ChuteConfig,
+) {
+  const { backY, frontY, backLeftX, backRightX, frontLeftX, frontRightX } = floor
+  const { topY, rightX: chuteRightX } = getChuteBounds(chuteCutout)
+  const leftMeetX = lerpX(backLeftX, backY, frontLeftX, frontY, topY)
+  const rightX = lerpX(backRightX, backY, frontRightX, frontY, y)
+  const leftX = y <= topY ? lerpX(backLeftX, backY, leftMeetX, topY, y) : chuteRightX
+
+  return { leftX, rightX }
+}
+
+/** 🔴 인형 영역 — y 높이에서 좌·우 x (원근) */
+function getDollZoneSpanAtY(y: number) {
+  return getZoneSpanAtY(y, GAME2_FLOOR, GAME2_DOLL_ZONE_CHUTE_CUTOUT)
+}
+
+/** 🟢 집게 이동 영역 — y 높이에서 좌·우 x (원근) */
+function getClawZoneSpanAtY(y: number) {
+  return getZoneSpanAtY(y, GAME2_CLAW_ZONE.floor, GAME2_CLAW_ZONE_CHUTE_CUTOUT)
+}
+
+/** depth y → 0(뒤) … 1(앞). 집게 렌더 기본은 claw zone, 인형은 doll zone floor 전달 */
+export function getPlayDepthT(y: number, floor: TrapezoidFloorConfig = GAME2_CLAW_ZONE.floor) {
+  const { backY, frontY } = floor
   return clamp((y - backY) / (frontY - backY), 0, 1)
 }
 
-/** 이동 경로상 마지막 유효 좌표 — 경계에서 멈춤 (튕김 없음) */
-function slideToPlayArea(from: Game2PlayPosition, to: Game2PlayPosition): Game2PlayPosition {
-  if (isPointInPlayArea(to)) return to
-  if (!isPointInPlayArea(from)) return nearestPlayPositionOnY(from)
+function slideWithinZone(
+  from: Game2PlayPosition,
+  to: Game2PlayPosition,
+  isInside: (point: Game2Point) => boolean,
+  nearestOnY: (position: Game2PlayPosition) => Game2PlayPosition,
+): Game2PlayPosition {
+  if (isInside(to)) return to
+  if (!isInside(from)) return nearestOnY(from)
 
   let t0 = 0
   let t1 = 1
@@ -126,7 +194,7 @@ function slideToPlayArea(from: Game2PlayPosition, to: Game2PlayPosition): Game2P
       y: lerp(from.y, to.y, tm),
     }
 
-    if (isPointInPlayArea(probe)) t0 = tm
+    if (isInside(probe)) t0 = tm
     else t1 = tm
   }
 
@@ -136,13 +204,17 @@ function slideToPlayArea(from: Game2PlayPosition, to: Game2PlayPosition): Game2P
   }
 }
 
-/** 같은 y에서 x만 조정해 가장 가까운 유효 좌표 */
-function nearestPlayPositionOnY(position: Game2PlayPosition): Game2PlayPosition {
-  const { backY, frontY } = GAME2_FLOOR
+function nearestPositionOnYInZone(
+  position: Game2PlayPosition,
+  floor: TrapezoidFloorConfig,
+  getSpanAtY: (y: number) => { leftX: number; rightX: number },
+  isInside: (point: Game2Point) => boolean,
+): Game2PlayPosition {
+  const { backY, frontY } = floor
   const y = clamp(position.y, backY, frontY)
-  const { leftX, rightX } = getPlayAreaSpanAtY(y)
+  const { leftX, rightX } = getSpanAtY(y)
 
-  if (isPointInPlayArea({ x: position.x, y })) {
+  if (isInside({ x: position.x, y })) {
     return { x: position.x, y }
   }
 
@@ -151,7 +223,7 @@ function nearestPlayPositionOnY(position: Game2PlayPosition): Game2PlayPosition 
 
   for (let x = leftX; x <= rightX; x += 0.4) {
     const candidate = { x, y }
-    if (!isPointInPlayArea(candidate)) continue
+    if (!isInside(candidate)) continue
 
     const dist = Math.abs(x - position.x)
     if (dist < bestDist) {
@@ -166,12 +238,42 @@ function nearestPlayPositionOnY(position: Game2PlayPosition): Game2PlayPosition 
   return { x, y }
 }
 
-/** 플레이 영역 안으로 좌표 고정 */
-export function clampPlayPosition(position: Game2PlayPosition): Game2PlayPosition {
-  if (isPointInPlayArea(position)) return position
-  return nearestPlayPositionOnY(position)
+function nearestClawPositionOnY(position: Game2PlayPosition): Game2PlayPosition {
+  return nearestPositionOnYInZone(
+    position,
+    GAME2_CLAW_ZONE.floor,
+    getClawZoneSpanAtY,
+    isPointInClawZone,
+  )
 }
 
+function nearestDollPositionOnY(position: Game2PlayPosition): Game2PlayPosition {
+  return nearestPositionOnYInZone(
+    position,
+    GAME2_FLOOR,
+    getDollZoneSpanAtY,
+    isPointInDollZone,
+  )
+}
+
+/** 🟢 집게 이동 영역 안으로 좌표 고정 */
+export function clampClawPosition(position: Game2PlayPosition): Game2PlayPosition {
+  if (isPointInClawZone(position)) return position
+  return nearestClawPositionOnY(position)
+}
+
+/** 🔴 인형 영역 안으로 좌표 고정 */
+export function clampDollPosition(position: Game2PlayPosition): Game2PlayPosition {
+  if (isPointInDollZone(position)) return position
+  return nearestDollPositionOnY(position)
+}
+
+/** @deprecated clampDollPosition — 인형용 */
+export function clampPlayPosition(position: Game2PlayPosition): Game2PlayPosition {
+  return clampDollPosition(position)
+}
+
+/** 🟢 집게 idle 이동 — claw zone 경계에서 멈춤 */
 export function movePlayPosition(
   position: Game2PlayPosition,
   direction: 'up' | 'down' | 'left' | 'right',
@@ -194,7 +296,7 @@ export function movePlayPosition(
       break
   }
 
-  return slideToPlayArea(position, next)
+  return slideWithinZone(position, next, isPointInClawZone, nearestClawPositionOnY)
 }
 
 type ClawRenderOptions = {
@@ -321,57 +423,55 @@ export function getClawFloorMarkerFromPlayPosition(
   }
 }
 
-/** 플레이 영역 계산용 배출구 (분홍 경계) */
+/** 🔴 인형 영역 컷아웃(배출구) — stage % */
+export function getGame2DollZoneChuteCutout() {
+  return getChuteBounds(GAME2_DOLL_ZONE_CHUTE_CUTOUT)
+}
+
+/** @deprecated getGame2DollZoneChuteCutout */
 export function getGame2PlayAreaChuteBounds() {
-  return getChuteBounds(GAME2_PLAY_AREA_CHUTE)
+  return getGame2DollZoneChuteCutout()
 }
 
-/** 주황 가이드용 배출구 */
+/** 🟡 배출구 영역 bounds */
 export function getGame2ChuteBounds() {
-  return getChuteBounds(GAME2_FLOOR_CHUTE)
+  return getChuteBounds(GAME2_CHUTE_ZONE)
 }
 
-/** 배출구 제외 — 인형뽑기 안쪽 플레이 영역 외곽 (시계 방향, stage %) */
-export function getGame2PlayAreaOutline(): Game2Point[] {
-  const { backY, frontY, backLeftX, backRightX, frontLeftX, frontRightX } = GAME2_FLOOR
-  const { leftX, topY, rightX } = getGame2PlayAreaChuteBounds()
-
-  const leftMeetX = lerpX(backLeftX, backY, frontLeftX, frontY, topY)
-
-  const points: Game2Point[] = [
-    { x: backLeftX, y: backY },
-    { x: backRightX, y: backY },
-    { x: frontRightX, y: frontY },
-    { x: rightX, y: frontY },
-    { x: rightX, y: topY },
-    { x: leftX, y: topY },
-  ]
-
-  if (leftMeetX > leftX) {
-    points.push({ x: leftMeetX, y: topY })
-  }
-
-  points.push({ x: backLeftX, y: backY })
-
-  return points
+/** 🔴 인형 영역 외곽 — stage % 시계 방향 */
+export function getGame2DollZoneOutline(): Game2Point[] {
+  return buildTrapezoidZoneOutline(GAME2_FLOOR, GAME2_DOLL_ZONE_CHUTE_CUTOUT)
 }
+
+/** 🟢 집게 이동 영역 외곽 — stage % 시계 방향 */
+export function getGame2ClawZoneOutline(): Game2Point[] {
+  return buildTrapezoidZoneOutline(GAME2_CLAW_ZONE.floor, GAME2_CLAW_ZONE_CHUTE_CUTOUT)
+}
+
+/** @deprecated getGame2ClawZoneOutline */
+export function getGame2DollZoneOriginalOutline(): Game2Point[] {
+  return getGame2ClawZoneOutline()
+}
+
+/** @deprecated getGame2DollZoneOutline */
+export const getGame2PlayAreaOutline = getGame2DollZoneOutline
 
 /**
- * 플레이 영역 격자 — 원근 사다리꼴 타일 (stage %).
- * 중심이 플레이 폴리곤 안에 있는 칸만 번호 부여.
+ * 🔴 인형 영역 격자 — 원근 사다리꼴 타일 (stage %).
+ * 중심이 인형 영역 다각형 안에 있는 칸만 번호 부여.
  */
 export function getGame2PlayGridCells(): Game2PlayGridCell[] {
   const { backY, frontY } = GAME2_FLOOR
   const { cols, rows } = GAME2_PLAY_GRID
-  const outline = getGame2PlayAreaOutline()
+  const outline = getGame2DollZoneOutline()
   const cells: Game2PlayGridCell[] = []
   let id = 1
 
   for (let row = 0; row < rows; row += 1) {
     const y0 = lerp(backY, frontY, row / rows)
     const y1 = lerp(backY, frontY, (row + 1) / rows)
-    const span0 = getPlayAreaSpanAtY(y0)
-    const span1 = getPlayAreaSpanAtY(y1)
+    const span0 = getDollZoneSpanAtY(y0)
+    const span1 = getDollZoneSpanAtY(y1)
 
     for (let col = 0; col < cols; col += 1) {
       const x0a = lerp(span0.leftX, span0.rightX, col / cols)
@@ -405,14 +505,14 @@ export function getGame2PlayGridCell(id: number) {
   return getGame2PlayGridCells().find((cell) => cell.id === id)
 }
 
-/** 집게 시작 위치 — 분홍 격자 1번 칸 중심 */
+/** 집게 시작 위치 — 분홍 격자 1번 칸 중심 (claw zone 기준) */
 export function getDefaultGame2ClawState(): Game2ClawState {
   const cell = getGame2PlayGridCell(1)
 
   if (!cell) {
     return {
       xPercent: GAME2_CLAW.defaultX,
-      playY: (GAME2_FLOOR.backY + GAME2_FLOOR.frontY) / 2,
+      playY: (GAME2_CLAW_ZONE.floor.backY + GAME2_CLAW_ZONE.floor.frontY) / 2,
       open: true,
       phase: 'idle',
       descendT: 0,
@@ -420,7 +520,7 @@ export function getDefaultGame2ClawState(): Game2ClawState {
     }
   }
 
-  const position = clampPlayPosition({
+  const position = clampClawPosition({
     x: cell.center.x,
     y: cell.center.y,
   })
@@ -445,7 +545,7 @@ export function isClawMovementLocked(state: Game2ClawState) {
   return state.phase !== 'idle'
 }
 
-/** 주황(노란) 배출구 가이드 중심 — stage % */
+/** 🟡 배출구 영역 중심 — stage % */
 export function getGame2ChuteCenter(): Game2Point {
   const { centerX, centerY } = getGame2ChuteBounds()
   return { x: centerX, y: centerY }
@@ -468,7 +568,7 @@ export function easeOutCubic(t: number) {
   return 1 - (1 - clamped) ** 3
 }
 
-/** 배출구 사각형 꼭짓점 — 주황 가이드 (시계 방향, stage %) */
+/** 🟡 배출구 영역 사각형 꼭짓점 — 시계 방향, stage % */
 export function getGame2ChuteOutline(): Game2Point[] {
   const { leftX, topY, rightX, bottomY } = getGame2ChuteBounds()
 
@@ -483,11 +583,12 @@ export function getGame2ChuteOutline(): Game2Point[] {
 
 export type Game2DollPlacement = {
   id: number
-  emoji: string
+  imageSrc: string
   xPercent: number
   playY: number
   depthScale: number
   rotateDeg: number
+  faceScaleX: number
 }
 
 export type Game2DollState = Game2DollPlacement & {
@@ -495,8 +596,8 @@ export type Game2DollState = Game2DollPlacement & {
   falling: boolean
 }
 
-export function createInitialGame2Dolls(emojis: readonly string[]): Game2DollState[] {
-  return generateGame2DollPlacements(GAME2_DOLLS.count, emojis).map((doll) => ({
+export function createInitialGame2Dolls(images: readonly string[]): Game2DollState[] {
+  return generateGame2DollPlacements(GAME2_DOLLS.count, images).map((doll) => ({
     ...doll,
     captured: false,
     falling: false,
@@ -535,44 +636,121 @@ export function getGame2DollById(
   return dolls.find((doll) => doll.id === id) ?? null
 }
 
-/** 집게에 붙은 인형 depth scale — 현재 play y 기준 */
+/** 집게에 붙은 인형 depth scale — doll zone floor 기준 */
 export function getHeldDollDepthScale(playY: number) {
   const { perspectiveScaleBack, perspectiveScaleFront } = GAME2_CLAW
-  const depthT = getPlayDepthT(playY)
+  const depthT = getPlayDepthT(playY, GAME2_FLOOR)
   return lerp(perspectiveScaleBack, perspectiveScaleFront, depthT)
 }
 
-/** 핑크 플레이 영역 격자 칸 중심에 인형 배치 (칸당 1개, 균일 분포) */
+function randomInRange(min: number, max: number) {
+  return min + Math.random() * (max - min)
+}
+
+function randomPointInGridCell(cell: Game2PlayGridCell): Game2Point {
+  const u = Math.random()
+  const v = Math.random()
+  const [a, b, c, d] = cell.corners
+
+  return {
+    x: (1 - u) * (1 - v) * a.x + u * (1 - v) * b.x + u * v * c.x + (1 - u) * v * d.x,
+    y: (1 - u) * (1 - v) * a.y + u * (1 - v) * b.y + u * v * c.y + (1 - u) * v * d.y,
+  }
+}
+
+function randomDollRotationDeg() {
+  const roll = Math.random()
+  if (roll < 0.14) return randomInRange(-42, 42)
+  if (roll < 0.42) return randomInRange(-26, 26)
+  return randomInRange(-12, 12)
+}
+
+function randomDollFaceScaleX() {
+  return Math.random() < 0.44 ? -1 : 1
+}
+
+function isTooCloseToPlacements(
+  point: Game2Point,
+  placements: readonly Game2DollPlacement[],
+  minDist: number,
+) {
+  return placements.some((doll) => {
+    const dx = doll.xPercent - point.x
+    const dy = doll.playY - point.y
+    return Math.hypot(dx, dy) < minDist
+  })
+}
+
+function createDollPlacementFromPoint(
+  id: number,
+  imageSrc: string,
+  point: Game2Point,
+  perspectiveScaleBack: number,
+  perspectiveScaleFront: number,
+): Game2DollPlacement {
+  const clamped = clampDollPosition(point)
+  const depthT = getPlayDepthT(clamped.y, GAME2_FLOOR)
+  const baseDepth = lerp(perspectiveScaleBack, perspectiveScaleFront, depthT)
+
+  return {
+    id,
+    imageSrc,
+    xPercent: clamped.x,
+    playY: clamped.y,
+    depthScale: baseDepth * randomInRange(0.9, 1.08),
+    rotateDeg: randomDollRotationDeg(),
+    faceScaleX: randomDollFaceScaleX(),
+  }
+}
+
+/** 🔴 인형 영역 안에 count개 배치 — 격자 구역 + 랜덤 위치·각도 */
 export function generateGame2DollPlacements(
   count: number,
-  emojis: readonly string[],
+  images: readonly string[],
 ): Game2DollPlacement[] {
   const { perspectiveScaleBack, perspectiveScaleFront } = GAME2_CLAW
-  const shuffledEmojis = [...emojis].sort(() => Math.random() - 0.5)
+  const shuffledImages = [...images].sort(() => Math.random() - 0.5)
   const shuffledCells = [...getGame2PlayGridCells()].sort(() => Math.random() - 0.5)
   const placements: Game2DollPlacement[] = []
+  const minDist = 5.2
 
   for (const cell of shuffledCells) {
     if (placements.length >= count) break
 
-    const point = clampPlayPosition(cell.center)
-    const depthT = getPlayDepthT(point.y)
+    let placed: Game2DollPlacement | null = null
 
-    placements.push({
-      id: placements.length + 1,
-      emoji: shuffledEmojis[placements.length % shuffledEmojis.length],
-      xPercent: point.x,
-      playY: point.y,
-      depthScale: lerp(perspectiveScaleBack, perspectiveScaleFront, depthT),
-      rotateDeg: (Math.random() - 0.5) * 28,
-    })
+    for (let attempt = 0; attempt < 14; attempt += 1) {
+      const candidate = randomPointInGridCell(cell)
+      if (!isPointInDollZone(candidate)) continue
+      if (isTooCloseToPlacements(candidate, placements, minDist)) continue
+
+      placed = createDollPlacementFromPoint(
+        placements.length + 1,
+        shuffledImages[placements.length % shuffledImages.length],
+        candidate,
+        perspectiveScaleBack,
+        perspectiveScaleFront,
+      )
+      break
+    }
+
+    if (!placed) {
+      placed = createDollPlacementFromPoint(
+        placements.length + 1,
+        shuffledImages[placements.length % shuffledImages.length],
+        randomPointInGridCell(cell),
+        perspectiveScaleBack,
+        perspectiveScaleFront,
+      )
+    }
+
+    placements.push(placed)
   }
 
   if (placements.length >= count) return placements
 
   const marginY = 1.4
   const marginX = 3
-  const minDist = 8
   let attempts = 0
   const maxAttempts = (count - placements.length) * 120
 
@@ -580,29 +758,23 @@ export function generateGame2DollPlacements(
     attempts += 1
     const { backY, frontY } = GAME2_FLOOR
     const y = backY + marginY + Math.random() * (frontY - backY - marginY * 2)
-    const { leftX, rightX } = getPlayAreaSpanAtY(y)
+    const { leftX, rightX } = getDollZoneSpanAtY(y)
     if (rightX - leftX <= marginX * 2) continue
 
     const x = leftX + marginX + Math.random() * (rightX - leftX - marginX * 2)
     const point = { x, y }
-    if (!isPointInPlayArea(point)) continue
+    if (!isPointInDollZone(point)) continue
+    if (isTooCloseToPlacements(point, placements, minDist)) continue
 
-    const crowded = placements.some((doll) => {
-      const dx = doll.xPercent - x
-      const dy = doll.playY - y
-      return Math.hypot(dx, dy) < minDist
-    })
-    if (crowded) continue
-
-    const depthT = getPlayDepthT(y)
-    placements.push({
-      id: placements.length + 1,
-      emoji: shuffledEmojis[placements.length % shuffledEmojis.length],
-      xPercent: x,
-      playY: y,
-      depthScale: lerp(perspectiveScaleBack, perspectiveScaleFront, depthT),
-      rotateDeg: (Math.random() - 0.5) * 28,
-    })
+    placements.push(
+      createDollPlacementFromPoint(
+        placements.length + 1,
+        shuffledImages[placements.length % shuffledImages.length],
+        point,
+        perspectiveScaleBack,
+        perspectiveScaleFront,
+      ),
+    )
   }
 
   return placements

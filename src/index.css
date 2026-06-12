@@ -2,8 +2,10 @@
   --color-bg: #ffffff;
   --color-surface: #ffffff;
   --color-surface-elevated: #f5f5f7;
-  --color-primary: #6c5ce7;
-  --color-primary-hover: #7d6ff0;
+  --color-primary: #584ef5;
+  --color-primary-hover: #6e62ff;
+  --color-primary-rgb: 88 78 245;
+  --color-primary-hover-rgb: 110 98 255;
   --color-text: #1a1a2e;
   --color-text-muted: #6b6b80;
   --color-accent: #00cec9;

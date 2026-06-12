@@ -14,7 +14,7 @@ export function getOrbitScale(stageWidth: number, stageHeight: number) {
 export const DOLL_CLIP_WIDTH_PX = 26
 export const DOLL_CLIP_HEIGHT_PX = 14
 export const DOLL_STRING_HEIGHT_PX = 36
-export const DOLL_EMOJI_SIZE_PX = 50
+export const DOLL_EMOJI_SIZE_PX = 75
 export const DOLL_EMOJI_LEAD_PX = DOLL_CLIP_HEIGHT_PX + DOLL_STRING_HEIGHT_PX
 
 export const MECHANISM_BODY_PX = 48

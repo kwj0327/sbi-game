@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { DOLL_EMOJIS } from '../../game/clawGameConfig'
+import { DOLL_IMAGES } from '../../game/clawGameConfig'
 import { computeFallToChute } from './chuteFallGeometry'
 import type { OrbitSize, VisibleDoll } from './types'
 
@@ -56,7 +56,12 @@ export function FallingDollLayer({ dolls, orbitSize, orbitScale }: FallingDollLa
             <div className="machine-dolls__rail-offset">
               <div className="machine-dolls__clip" aria-hidden="true" />
               <div className="machine-dolls__string" aria-hidden="true" />
-              <span className="machine-dolls__emoji">{DOLL_EMOJIS[index % DOLL_EMOJIS.length]}</span>
+              <img
+                src={DOLL_IMAGES[index % DOLL_IMAGES.length]}
+                alt=""
+                className="machine-dolls__emoji"
+                draggable={false}
+              />
             </div>
           </div>
         )

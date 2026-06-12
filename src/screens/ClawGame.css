@@ -38,9 +38,9 @@
   font-size: clamp(15px, 4.1vw, 16px);
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(180deg, #ff6b95 0%, #ff4d7e 100%);
+  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   box-shadow:
-    0 8px 22px rgb(255 77 126 / 38%),
+    0 8px 22px rgb(var(--color-primary-rgb) / 38%),
     inset 0 1px 0 rgb(255 255 255 / 22%);
 }
 

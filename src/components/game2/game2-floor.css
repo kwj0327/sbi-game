@@ -14,7 +14,20 @@
   stroke-linejoin: round;
 }
 
-.g2-floor-guide__edge--play {
+.g2-floor-guide__edge--claw-zone {
+  stroke: #22c55e;
+  stroke-width: 0.45;
+  opacity: 0.95;
+}
+
+.g2-floor-guide__edge--doll-zone-original {
+  stroke: #22c55e;
+  stroke-width: 0.42;
+  stroke-dasharray: 1.4 0.9;
+  opacity: 0.9;
+}
+
+.g2-floor-guide__edge--doll-zone {
   stroke: #ff3d7a;
   stroke-width: 0.45;
 }

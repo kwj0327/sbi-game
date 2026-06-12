@@ -1,6 +1,7 @@
 import {
   getGame2ChuteOutline,
-  getGame2PlayAreaOutline,
+  getGame2ClawZoneOutline,
+  getGame2DollZoneOutline,
   getGame2PlayGridCells,
 } from '../../game/game2PlayArea'
 
@@ -12,9 +13,10 @@ function toPolygonPoints(corners: { x: number; y: number }[]) {
   return corners.map(({ x, y }) => `${x},${y}`).join(' ')
 }
 
-/** 플레이·배출구·격자 가이드 — stage 좌표 % */
+/** 🟢 집게 · 🔴 인형 · 🟡 배출구 · 격자 가이드 — stage 좌표 % */
 export function Game2FloorGuide() {
-  const playArea = getGame2PlayAreaOutline()
+  const clawZone = getGame2ClawZoneOutline()
+  const dollZone = getGame2DollZoneOutline()
   const chute = getGame2ChuteOutline()
   const gridCells = getGame2PlayGridCells()
 
@@ -42,8 +44,13 @@ export function Game2FloorGuide() {
       ))}
 
       <polyline
-        className="g2-floor-guide__edge g2-floor-guide__edge--play"
-        points={toPolylinePoints(playArea)}
+        className="g2-floor-guide__edge g2-floor-guide__edge--claw-zone"
+        points={toPolylinePoints(clawZone)}
+        fill="none"
+      />
+      <polyline
+        className="g2-floor-guide__edge g2-floor-guide__edge--doll-zone"
+        points={toPolylinePoints(dollZone)}
         fill="none"
       />
       <polyline

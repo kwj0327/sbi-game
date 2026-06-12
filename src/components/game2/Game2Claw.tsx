@@ -7,7 +7,7 @@ import { getClawRenderFromPlayPosition, getDefaultGame2ClawState } from '../../g
 
 type Game2ClawProps = {
   claw?: Partial<Game2ClawState>
-  heldDoll?: { emoji: string; rotateDeg: number } | null
+  heldDoll?: { imageSrc: string; rotateDeg: number; faceScaleX: number } | null
 }
 
 export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
@@ -86,10 +86,18 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
         {heldDoll ? (
           <span
             className="g2-claw__held-doll"
-            style={{ ['--g2-held-rotate' as string]: `${heldDoll.rotateDeg}deg` }}
+            style={{
+              ['--g2-held-rotate' as string]: `${heldDoll.rotateDeg}deg`,
+              ['--g2-doll-face-x' as string]: `${heldDoll.faceScaleX}`,
+            }}
             aria-hidden="true"
           >
-            {heldDoll.emoji}
+            <img
+              src={heldDoll.imageSrc}
+              alt=""
+              className="g2-doll-sprite"
+              draggable={false}
+            />
           </span>
         ) : null}
       </div>

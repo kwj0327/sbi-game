@@ -8,10 +8,19 @@
 
 .g2-dolls__item {
   position: absolute;
-  font-size: calc(var(--g2-doll-size, 42px) * var(--g2-stage-scale, 1));
-  line-height: 1;
-  transform: translate(-50%, -50%) scale(var(--g2-doll-scale, 1))
+  transform: translate(-50%, -50%)
+    scale(
+      calc(var(--g2-doll-scale, 1) * var(--g2-doll-face-x, 1)),
+      var(--g2-doll-scale, 1)
+    )
     rotate(var(--g2-doll-rotate, 0deg));
   transform-origin: center center;
   filter: drop-shadow(0 3px 6px rgb(0 0 0 / 18%));
+}
+
+.g2-doll-sprite {
+  display: block;
+  width: calc(var(--g2-doll-size, 72px) * var(--g2-stage-scale, 1));
+  height: calc(var(--g2-doll-size, 72px) * var(--g2-stage-scale, 1));
+  object-fit: contain;
 }

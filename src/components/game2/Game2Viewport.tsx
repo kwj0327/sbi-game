@@ -105,7 +105,11 @@ export const Game2Viewport = forwardRef<Game2ViewportHandle, Game2ViewportProps>
             claw={claw}
             heldDoll={
               heldDoll
-                ? { emoji: heldDoll.emoji, rotateDeg: heldDoll.rotateDeg }
+                ? {
+                    imageSrc: heldDoll.imageSrc,
+                    rotateDeg: heldDoll.rotateDeg,
+                    faceScaleX: heldDoll.faceScaleX,
+                  }
                 : null
             }
           />

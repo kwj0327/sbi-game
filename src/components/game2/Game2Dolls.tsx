@@ -22,9 +22,15 @@ export function Game2Dolls({ dolls, heldDollId }: Game2DollsProps) {
             top: `${doll.playY}%`,
             ['--g2-doll-scale' as string]: `${doll.depthScale}`,
             ['--g2-doll-rotate' as string]: `${doll.rotateDeg}deg`,
+            ['--g2-doll-face-x' as string]: `${doll.faceScaleX}`,
           }}
         >
-          {doll.emoji}
+          <img
+            src={doll.imageSrc}
+            alt=""
+            className="g2-doll-sprite"
+            draggable={false}
+          />
         </span>
       ))}
     </div>

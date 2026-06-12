@@ -91,33 +91,94 @@ export type Game2ClawState = {
 }
 
 /**
- * 바닥 사다리꼴 (576×1024 PNG 기준 %)
- * 원근: 뒤쪽(벽 접합) ↔ 앞쪽(출구). 플레이 영역 계산은 game2PlayArea.ts 참고.
+ * Game 2 바닥 영역 (stage %)
+ *
+ * 🟡 GAME2_CHUTE_ZONE — 배출구 영역 (노란 가이드)
+ * 🔴 GAME2_DOLL_ZONE — 인형이 있을 수 있는 영역 (빨간 가이드)
+ * 🟢 GAME2_CLAW_ZONE — 집게가 움직일 수 있는 영역 (초록 가이드)
  */
-export const GAME2_FLOOR = {
-  backY: 65,
-  frontY: 93,
-  backLeftX: 22,
-  backRightX: 78,
-  frontLeftX: 8,
-  frontRightX: 92,
-} as const
 
-/** 플레이 영역 제외 배출구 — stage % (분홍 경계·게임플레이 기준) */
-export const GAME2_PLAY_AREA_CHUTE = {
-  centerX: 24,
-  centerY: 89.5,
-  width: 28,
-  height: 9,
-} as const
-
-/** 배출구 가이드 — stage % (주황 표시용, 플레이 경계와 분리) */
-export const GAME2_FLOOR_CHUTE = {
+/** 🟡 배출구 영역 — 낙하·집게 배출 이동 목표 */
+export const GAME2_CHUTE_ZONE = {
   centerX: 24,
   centerY: 89.5,
   width: 24,
   height: 7.5,
 } as const
+
+/** @deprecated GAME2_CHUTE_ZONE */
+export const GAME2_FLOOR_CHUTE = GAME2_CHUTE_ZONE
+
+/**
+ * 🔴 인형 영역 — 바닥 인형 배치·존재·집기 판정 (확정).
+ * 시각: `.g2-floor-guide__edge--doll-zone` · `getGame2DollZoneOutline()`
+ */
+export const GAME2_DOLL_ZONE = {
+  floor: {
+    backY: 67,
+    frontY: 89,
+    backLeftX: 22,
+    backRightX: 78,
+    frontLeftX: 8,
+    /** 12번 격자·앞쪽 빨간 테두리 오른쪽 끝 (작을수록 테두리·12번 칸이 왼쪽으로) */
+    frontRightX: 87,
+  },
+  chuteClearance: {
+    top: 5.5,
+    left: 10,
+    right: 6.5,
+    bottom: 3.8,
+  },
+} as const
+
+/**
+ * 🟢 집게 이동 영역 — idle 이동·하강·좌표 클램프 (확정).
+ * 시각: `.g2-floor-guide__edge--claw-zone` · `getGame2ClawZoneOutline()`
+ */
+export const GAME2_CLAW_ZONE = {
+  floor: {
+    backY: 65,
+    frontY: 93,
+    backLeftX: 22,
+    backRightX: 78,
+    frontLeftX: 8,
+    frontRightX: 92,
+  },
+  chuteCutout: {
+    centerX: 24,
+    centerY: 89.5,
+    width: 28,
+    height: 9,
+  },
+} as const
+
+export const GAME2_CLAW_ZONE_CHUTE_CUTOUT = GAME2_CLAW_ZONE.chuteCutout
+
+/** @deprecated GAME2_CLAW_ZONE */
+export const GAME2_DOLL_ZONE_ORIGINAL = GAME2_CLAW_ZONE
+
+/** @deprecated GAME2_DOLL_ZONE.floor */
+export const GAME2_FLOOR = GAME2_DOLL_ZONE.floor
+
+/** 인형 영역에서 제외하는 배출구 컷아웃 (빨간 경계 계산) */
+export const GAME2_DOLL_ZONE_CHUTE_CUTOUT = {
+  centerX: GAME2_CHUTE_ZONE.centerX,
+  centerY: GAME2_CHUTE_ZONE.centerY,
+  width:
+    GAME2_CHUTE_ZONE.width +
+    GAME2_DOLL_ZONE.chuteClearance.left +
+    GAME2_DOLL_ZONE.chuteClearance.right,
+  height:
+    GAME2_CHUTE_ZONE.height +
+    GAME2_DOLL_ZONE.chuteClearance.top +
+    GAME2_DOLL_ZONE.chuteClearance.bottom,
+} as const
+
+/** @deprecated GAME2_DOLL_ZONE.chuteClearance */
+export const GAME2_CHUTE_CLEARANCE = GAME2_DOLL_ZONE.chuteClearance
+
+/** @deprecated GAME2_DOLL_ZONE_CHUTE_CUTOUT */
+export const GAME2_PLAY_AREA_CHUTE = GAME2_DOLL_ZONE_CHUTE_CUTOUT
 
 /** 배출구 낙하 연출 */
 export const GAME2_CHUTE_FALL = {
@@ -132,13 +193,13 @@ export function getGame2ChuteFallSequenceMs() {
   return fallDurationMs + holdMs + fadeMs
 }
 
-/** 플레이 영역 격자 — 뒤(벽) → 앞, 좌 → 우 (원근 사다리꼴 타일) */
+/** 인형 영역 격자 — 뒤(벽) → 앞, 좌 → 우 (원근 사다리꼴 타일) */
 export const GAME2_PLAY_GRID = {
   cols: 4,
   rows: 3,
 } as const
 
-/** 플레이 영역 인형 배치 */
+/** 인형 영역 안 인형 수·표시 크기 */
 export const GAME2_DOLLS = {
   count: 10,
   emojiSizePx: 72,
@@ -146,7 +207,7 @@ export const GAME2_DOLLS = {
 
 export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   xPercent: GAME2_CLAW.defaultX,
-  playY: (GAME2_FLOOR.backY + GAME2_FLOOR.frontY) / 2,
+  playY: (GAME2_CLAW_ZONE.floor.backY + GAME2_CLAW_ZONE.floor.frontY) / 2,
   open: true,
   phase: 'idle',
   descendT: 0,

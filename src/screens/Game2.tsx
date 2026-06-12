@@ -4,7 +4,7 @@ import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
 import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
-import { DOLL_EMOJIS } from '../game/clawGameConfig'
+import { DOLL_IMAGES } from '../game/clawGameConfig'
 import { GAME2_CLAW, getGame2ChuteFallSequenceMs, type Game2ClawPhase, type Game2ClawState } from '../game/game2Config'
 import {
   createInitialGame2Dolls,
@@ -49,7 +49,7 @@ function getClawStatusMessage(phase: Game2ClawPhase, hasHeldDoll: boolean) {
 export function Game2({ onExit }: Game2Props) {
   const [claw, setClaw] = useState<Game2ClawState>(getDefaultGame2ClawState)
   const [dolls, setDolls] = useState<Game2DollState[]>(() =>
-    createInitialGame2Dolls(DOLL_EMOJIS),
+    createInitialGame2Dolls(DOLL_IMAGES),
   )
   const clawRef = useRef(claw)
   clawRef.current = claw

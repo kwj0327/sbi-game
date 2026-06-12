@@ -1,4 +1,4 @@
-import { DOLL_EMOJIS } from '../../game/clawGameConfig'
+import { DOLL_IMAGES } from '../../game/clawGameConfig'
 import type { GamePhase, VisibleDoll } from './types'
 
 type HangingDollsProps = {
@@ -46,9 +46,13 @@ export function HangingDolls({
                     .join(' ')}
                 />
                 <div className="machine-dolls__string" aria-hidden="true" />
-                <span className="machine-dolls__emoji" aria-hidden="true">
-                  {DOLL_EMOJIS[index % DOLL_EMOJIS.length]}
-                </span>
+                <img
+                  src={DOLL_IMAGES[index % DOLL_IMAGES.length]}
+                  alt=""
+                  className="machine-dolls__emoji"
+                  aria-hidden="true"
+                  draggable={false}
+                />
               </div>
             </div>
           )

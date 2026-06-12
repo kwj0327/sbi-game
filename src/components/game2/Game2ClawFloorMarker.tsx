@@ -26,7 +26,12 @@ export function Game2ClawFloorMarker({ claw }: Game2ClawFloorMarkerProps) {
           width: `${marker.widthPercent}%`,
           height: `${marker.heightPercent}%`,
         }}
-      />
+      >
+        <span className="g2-claw-floor-marker__corner g2-claw-floor-marker__corner--tl" />
+        <span className="g2-claw-floor-marker__corner g2-claw-floor-marker__corner--tr" />
+        <span className="g2-claw-floor-marker__corner g2-claw-floor-marker__corner--bl" />
+        <span className="g2-claw-floor-marker__corner g2-claw-floor-marker__corner--br" />
+      </div>
     </div>
   )
 }
