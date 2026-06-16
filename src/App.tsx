@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FirebaseProvider } from './context/FirebaseContext'
 import { type GameId } from './game/games'
 import { ClawGame } from './screens/ClawGame'
 import { Game2 } from './screens/Game2'
@@ -7,7 +8,7 @@ import { HomeScreen } from './screens/HomeScreen'
 
 type Screen = 'home' | GameId
 
-function App() {
+function AppContent() {
   const [screen, setScreen] = useState<Screen>('home')
 
   if (screen === 'claw') {
@@ -23,6 +24,14 @@ function App() {
   }
 
   return <HomeScreen onSelectGame={setScreen} />
+}
+
+function App() {
+  return (
+    <FirebaseProvider>
+      <AppContent />
+    </FirebaseProvider>
+  )
 }
 
 export default App

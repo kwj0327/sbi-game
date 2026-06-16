@@ -1,0 +1,114 @@
+.attendance-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 16px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+}
+
+.attendance-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attendance-panel__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.attendance-panel__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.attendance-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.attendance-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px;
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.attendance-stat__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.attendance-stat__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.attendance-panel__check-in {
+  min-height: var(--touch-min);
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.attendance-panel__check-in:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.attendance-panel__check-in:disabled {
+  opacity: 0.72;
+  background: var(--color-text-muted);
+}
+
+.attendance-panel__recent-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.attendance-recent {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendance-recent__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.attendance-recent__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 8%);
+}
+
+.attendance-recent__dot--checked {
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 18%);
+}
+
+.attendance-recent__label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
