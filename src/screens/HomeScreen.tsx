@@ -20,14 +20,12 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
 
   return (
     <MobileLayout
-      scrollable
+      scrollable={tab !== 'ranking'}
       footer={<BottomNav activeTab={tab} onSelectTab={setTab} />}
     >
       {tab === 'home' ? (
         <>
           <section className="hero">
-            <h2 className="hero__title">게임 선택</h2>
-            <p className="hero__subtitle">플레이할 게임을 골라 주세요.</p>
             <ul className="game-list">
               {GAMES.map((game) => (
                 <li key={game.id}>
@@ -61,7 +59,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
             </ul>
           </section>
 
-          <section className="stats">
+          <section className="stats" aria-label="내 수집 현황">
             <article className="stat-card">
               <span className="stat-card__value">{summary.total}</span>
               <span className="stat-card__label">획득 인형</span>

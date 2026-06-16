@@ -22,6 +22,7 @@ export type LeaderboardSnapshot = {
   entries: LeaderboardEntry[]
   myRank: number | null
   myCollectionCount: number
+  totalPlayers: number
 }
 
 function formatPlayerName(uid: string, displayName?: unknown) {
@@ -63,6 +64,15 @@ export function subscribeCollectionLeaderboard(
 
         let myRank: number | null = null
         let myCollectionCount = 0
+        let totalPlayers = 0
+
+        try {
+          const totalSnap = await getCountFromServer(query(collection(db, 'users')))
+          if (generation !== snapshotGeneration) return
+          totalPlayers = totalSnap.data().count
+        } catch {
+          totalPlayers = entries.length
+        }
 
         if (uid) {
           const mine = entries.find((entry) => entry.uid === uid)
@@ -113,7 +123,7 @@ export function subscribeCollectionLeaderboard(
         }
 
         if (generation !== snapshotGeneration) return
-        onChange({ entries, myRank, myCollectionCount })
+        onChange({ entries, myRank, myCollectionCount, totalPlayers })
       })().catch((error: unknown) => {
         if (generation !== snapshotGeneration) return
         onError?.(error instanceof Error ? error : new Error('랭킹을 불러오지 못했습니다.'))

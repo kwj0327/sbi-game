@@ -2,7 +2,7 @@ import clawGameIcon from '../assets/claw-game-icon.png'
 import game2Icon from '../assets/game2-icon.png'
 import game3CollectionIcon from '../assets/game3-collection-icon.png'
 
-export type GameId = 'claw' | 'game2' | 'game3'
+export type GameId = 'claw' | 'game2' | 'game4' | 'game3'
 
 export type GameInfo = {
   id: GameId
@@ -24,6 +24,12 @@ export const GAMES: readonly GameInfo[] = [
     title: '집게 인형 뽑기',
     description: '조이스틱으로 집게를 이동!\n↓로 하강!',
     icon: game2Icon,
+  },
+  {
+    id: 'game4',
+    title: '무제',
+    description: '준비 중',
+    emoji: '📝',
   },
   {
     id: 'game3',

@@ -12,6 +12,7 @@ const EMPTY: LeaderboardSnapshot = {
   entries: [],
   myRank: null,
   myCollectionCount: 0,
+  totalPlayers: 0,
 }
 
 export function useLeaderboard() {
@@ -80,6 +81,7 @@ export function useLeaderboard() {
     entries: snapshot.entries,
     myRank: snapshot.myRank,
     myCollectionCount: snapshot.myCollectionCount,
+    totalPlayers: snapshot.totalPlayers,
     loading: !ready || loading,
     error,
   }

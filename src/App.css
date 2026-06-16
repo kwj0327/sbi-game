@@ -8,20 +8,6 @@
   background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
 }
 
-.hero__title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.hero__subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
 .game-list {
   display: flex;
   flex-direction: column;

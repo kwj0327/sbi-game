@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { FirebaseProvider } from './context/FirebaseContext'
 import { ALL_DOLL_COUNT } from './game/dollConfig'
-import { type GameId } from './game/games'
+import { GAMES, type GameId } from './game/games'
 import { useCollectionSync } from './hooks/useCollectionSync'
 import { ClawGame } from './screens/ClawGame'
 import { Game2 } from './screens/Game2'
 import { Game3 } from './screens/Game3'
 import { HomeScreen } from './screens/HomeScreen'
+import { PlaceholderGame } from './screens/PlaceholderGame'
 
 type Screen = 'home' | GameId
 
@@ -20,6 +21,19 @@ function AppContent() {
 
   if (screen === 'game2') {
     return <Game2 onExit={() => setScreen('home')} />
+  }
+
+  if (screen === 'game4') {
+    const game = GAMES.find((entry) => entry.id === screen)
+    if (!game) return <HomeScreen onSelectGame={setScreen} />
+
+    return (
+      <PlaceholderGame
+        title={game.title}
+        emoji={game.emoji ?? '📝'}
+        onExit={() => setScreen('home')}
+      />
+    )
   }
 
   if (screen === 'game3') {
