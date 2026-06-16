@@ -52,11 +52,6 @@ export function getCollectedDolls(): CollectedDollEntry[] {
   return readEntries()
 }
 
-export function hasCollectedDollIndex(dollIndex: number): boolean {
-  if (dollIndex < 0) return false
-  return readEntries().some((entry) => entry.dollIndex === dollIndex)
-}
-
 export function getCollectionSummary(dollCount: number): DollCollectionSummary {
   const countsByIndex = Array.from({ length: dollCount }, () => 0)
 

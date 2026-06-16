@@ -9,7 +9,7 @@ import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Gam
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { ALL_DOLL_IMAGES, pickRandomGame2DollIndices } from '../game/dollConfig'
-import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
+import { addCollectedDoll } from '../game/dollCollection'
 import {
   GAME2_CLAW,
   GAME2_CLOSE_SIM,
@@ -183,9 +183,8 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
         if (captured) {
           const dollIndex = ALL_DOLL_IMAGES.indexOf(captured.imageSrc)
           if (dollIndex >= 0) {
-            const isDuplicate = hasCollectedDollIndex(dollIndex)
             addCollectedDoll(dollIndex, 'game2')
-            if (!isDuplicate) setSuccessDollImage(captured.imageSrc)
+            setSuccessDollImage(captured.imageSrc)
           }
         }
         setDolls((prev) =>
@@ -536,9 +535,8 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
           if (captured) {
             const dollIndex = ALL_DOLL_IMAGES.indexOf(captured.imageSrc)
             if (dollIndex >= 0) {
-              const isDuplicate = hasCollectedDollIndex(dollIndex)
               addCollectedDoll(dollIndex, 'game2')
-              if (!isDuplicate) setSuccessDollImage(captured.imageSrc)
+              setSuccessDollImage(captured.imageSrc)
             }
           }
           setDolls((prev) =>

@@ -2,11 +2,6 @@
 export const ATTENDANCE_TICKET_REWARD = 20
 export const DRAW_TICKET_PLAY_COST = 2
 
-/** @deprecated ATTENDANCE_TICKET_REWARD */
-export const ATTENDANCE_COIN_REWARD = ATTENDANCE_TICKET_REWARD
-/** @deprecated DRAW_TICKET_PLAY_COST */
-export const CLAW_COIN_PLAY_COST = DRAW_TICKET_PLAY_COST
-
 const STORAGE_KEY = 'sbi-game-claw-coins'
 export const CLAW_COINS_CHANGE_EVENT = 'sbi-game-claw-coins-change'
 

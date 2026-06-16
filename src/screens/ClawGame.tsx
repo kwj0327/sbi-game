@@ -13,7 +13,7 @@ import type { DollState, GamePhase } from '../components/claw-game/types'
 import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
-import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
+import { addCollectedDoll } from '../game/dollCollection'
 import {
   ALL_DOLL_IMAGES,
   DOLL_COUNT,
@@ -223,14 +223,9 @@ export function ClawGame({ onExit, onGoToAttendance }: ClawGameProps) {
             ),
           )
           const dollIndex = sessionDollIndices[strike.index]
-          const isDuplicate = hasCollectedDollIndex(dollIndex)
           addCollectedDoll(dollIndex, 'claw')
           setResultMessage('성공! 인형을 뽑았어요')
-          if (isDuplicate) {
-            window.setTimeout(() => resetRound(), RESULT_DELAY_MS)
-          } else {
-            setSuccessDollIndex(strike.index)
-          }
+          setSuccessDollIndex(strike.index)
           return
         }
         resetRound()
