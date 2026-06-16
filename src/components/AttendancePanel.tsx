@@ -1,11 +1,13 @@
 import { DrawTicketRewardPopup } from './DrawTicketRewardPopup'
 import { PointCoinIcon } from './PointCoinIcon'
+import { TicketAmount } from './TicketAmount'
 import { ATTENDANCE_TICKET_REWARD } from '../game/clawCoins'
 import {
   ATTENDANCE_REPEAT_CHECKIN_ENABLED,
   ATTENDANCE_WEEKLY_BONUS_TICKETS,
   ATTENDANCE_WEEK_LENGTH,
 } from '../game/attendance'
+import { TICKET_MISSIONS } from '../game/ticketMissions'
 import { useAttendance } from '../hooks/useAttendance'
 import { useClawCoins } from '../hooks/useClawCoins'
 import './AttendancePanel.css'
@@ -82,6 +84,29 @@ export function AttendancePanel() {
                 </li>
               )
             })}
+          </ul>
+        </div>
+
+        <div className="attendance-panel__missions" aria-labelledby="attendance-missions-title">
+          <h3 id="attendance-missions-title" className="attendance-panel__missions-title">
+            티켓 모으기 미션
+          </h3>
+          <ul className="attendance-mission-list">
+            {TICKET_MISSIONS.map((mission) => (
+              <li key={mission.id}>
+                <button type="button" className="attendance-mission-list__item">
+                  <span className="attendance-mission-list__body">
+                    <span className="attendance-mission-list__title">{mission.title}</span>
+                  </span>
+                  <span className="attendance-mission-list__reward">
+                    <TicketAmount value={mission.rewardTickets} size="sm" />
+                  </span>
+                  <span className="attendance-mission-list__chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </section>

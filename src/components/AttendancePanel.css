@@ -133,3 +133,78 @@
   line-height: 1;
   color: var(--color-accent);
 }
+
+.attendance-panel__missions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(0 0 0 / 6%);
+}
+
+.attendance-panel__missions-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.attendance-mission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendance-mission-list__item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid rgb(0 0 0 / 6%);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 4%);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.attendance-mission-list__item:active {
+  transform: scale(0.99);
+  background: var(--color-surface-elevated);
+}
+
+.attendance-mission-list__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.attendance-mission-list__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.attendance-mission-list__reward {
+  flex-shrink: 0;
+}
+
+.attendance-mission-list__reward .ticket-amount__value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.attendance-mission-list__chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-primary);
+}
