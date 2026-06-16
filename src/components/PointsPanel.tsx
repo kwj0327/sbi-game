@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { ORIGINAL_DOLL_IMAGES } from '../game/dollConfig'
 import { PointAmount } from './PointAmount'
+import { PointCoinIcon } from './PointCoinIcon'
 import { PointsExchangeModal } from './PointsExchangeModal'
 import { PointsUseModal } from './PointsUseModal'
 import { usePoints } from '../hooks/usePoints'
@@ -29,19 +31,40 @@ export function PointsPanel() {
           )}
         </article>
 
-        <div className="points-panel__actions">
+        <div className="points-panel__actions" role="group" aria-label="포인트 메뉴">
           <button
             type="button"
-            className="points-panel__action"
+            className="points-panel__action points-panel__action--exchange"
             onClick={() => setExchangeOpen(true)}
           >
+            <span className="points-panel__action-visual" aria-hidden="true">
+              <img
+                src={ORIGINAL_DOLL_IMAGES[0]}
+                alt=""
+                className="points-panel__action-doll"
+                draggable={false}
+              />
+              <span className="points-panel__action-flow">
+                <span className="points-panel__action-arrow">→</span>
+                <PointCoinIcon size="sm" className="points-panel__action-coin" />
+              </span>
+            </span>
             <span className="points-panel__action-title">교환</span>
-            <span className="points-panel__action-desc">수집한 인형을 포인트로 교환</span>
+            <span className="points-panel__action-desc">인형을 포인트로</span>
           </button>
 
-          <button type="button" className="points-panel__action" onClick={() => setUseOpen(true)}>
+          <button
+            type="button"
+            className="points-panel__action points-panel__action--use"
+            onClick={() => setUseOpen(true)}
+          >
+            <span className="points-panel__action-visual" aria-hidden="true">
+              <span className="points-panel__action-shop-icon">
+                <PointCoinIcon size="sm" className="points-panel__action-coin" />
+              </span>
+            </span>
             <span className="points-panel__action-title">사용</span>
-            <span className="points-panel__action-desc">포인트로 아이템 구매</span>
+            <span className="points-panel__action-desc">포인트로 구매</span>
           </button>
         </div>
       </section>
