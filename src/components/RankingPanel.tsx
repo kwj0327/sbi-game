@@ -6,7 +6,7 @@ import { useUserProfile } from '../hooks/useUserProfile'
 import './RankingPanel.css'
 
 export function RankingPanel() {
-  const { user } = useFirebaseUser()
+  const { user, ready, error: authError } = useFirebaseUser()
   const { entries, myRank, myPoints, loading, error } = useLeaderboard()
   const {
     profile,
@@ -41,8 +41,14 @@ export function RankingPanel() {
         <p className="ranking-panel__subtitle">누적 포인트 기준 상위 플레이어</p>
       </header>
 
-      {!user ? (
+      {!ready ? (
         <p className="ranking-panel__message">로그인 준비 중…</p>
+      ) : null}
+
+      {ready && authError ? <p className="ranking-panel__error">{authError}</p> : null}
+
+      {ready && !authError && !user ? (
+        <p className="ranking-panel__message">로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : null}
 
       {error ? <p className="ranking-panel__error">{error}</p> : null}
@@ -93,7 +99,7 @@ export function RankingPanel() {
 
       {loading ? <p className="ranking-panel__message">랭킹 불러오는 중…</p> : null}
 
-      {!loading && !error && entries.length === 0 ? (
+      {user && !error && !loading && entries.length === 0 ? (
         <p className="ranking-panel__message">아직 랭킹 데이터가 없어요.</p>
       ) : null}
 

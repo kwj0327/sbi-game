@@ -19,9 +19,15 @@ export function useFirebaseAuth(): FirebaseAuthState {
   useEffect(() => {
     const auth = getFirebaseAuth()
     if (!auth) {
-      setState({ ready: true, user: null, error: null })
+      setState({
+        ready: true,
+        user: null,
+        error: 'Firebase 설정을 불러오지 못했습니다.',
+      })
       return
     }
+
+    let signingIn = false
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -31,11 +37,19 @@ export function useFirebaseAuth(): FirebaseAuthState {
         return
       }
 
-      signInAnonymously(auth).catch((error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : 'Firebase 익명 로그인에 실패했습니다.'
-        setState({ ready: true, user: null, error: message })
-      })
+      if (signingIn) return
+      signingIn = true
+      setState((prev) => ({ ...prev, ready: false, error: null }))
+
+      signInAnonymously(auth)
+        .catch((error: unknown) => {
+          const message =
+            error instanceof Error ? error.message : 'Firebase 익명 로그인에 실패했습니다.'
+          setState({ ready: true, user: null, error: message })
+        })
+        .finally(() => {
+          signingIn = false
+        })
     })
 
     return unsubscribe
