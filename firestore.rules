@@ -7,7 +7,9 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.points == 0
-        && request.resource.data.collectionCount == 0;
+        && request.resource.data.collectionCount is int
+        && request.resource.data.collectionCount >= 0
+        && request.resource.data.collectionCount <= 23;
       allow update: if request.auth != null
         && request.auth.uid == userId
         && (

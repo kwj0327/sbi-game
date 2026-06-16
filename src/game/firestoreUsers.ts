@@ -37,10 +37,17 @@ export async function ensureUserDocument(
 
   await setDoc(ref, {
     points: 0,
-    collectionCount: initialCollectionCount,
+    collectionCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
+
+  if (initialCollectionCount > 0) {
+    await updateDoc(ref, {
+      collectionCount: initialCollectionCount,
+      updatedAt: serverTimestamp(),
+    })
+  }
 }
 
 /** 앱 실행·로그인 시 로컬 수집 종류 수를 Firestore 랭킹 값으로 맞춤 */
@@ -54,15 +61,17 @@ export async function bootstrapUserCollection(uid: string, localUniqueCount: num
   if (!snapshot.exists()) {
     await setDoc(ref, {
       points: 0,
-      collectionCount: localUniqueCount,
+      collectionCount: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
-    return
   }
 
+  if (localUniqueCount === 0) return
+
+  const latest = await getDoc(ref)
   const remoteCount =
-    typeof snapshot.data()?.collectionCount === 'number' ? snapshot.data()!.collectionCount : 0
+    typeof latest.data()?.collectionCount === 'number' ? latest.data()!.collectionCount : 0
 
   if (remoteCount === localUniqueCount) return
 

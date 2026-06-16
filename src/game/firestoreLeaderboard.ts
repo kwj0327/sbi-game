@@ -83,21 +83,31 @@ export function subscribeCollectionLeaderboard(
             }
 
             if (myCollectionCount > 0) {
-              const rankQuery = query(
-                collection(db, 'users'),
-                where('collectionCount', '>', myCollectionCount),
-              )
-              const rankSnap = await getCountFromServer(rankQuery)
-              if (generation !== snapshotGeneration) return
-              myRank = rankSnap.data().count + 1
+              try {
+                const rankQuery = query(
+                  collection(db, 'users'),
+                  where('collectionCount', '>', myCollectionCount),
+                )
+                const rankSnap = await getCountFromServer(rankQuery)
+                if (generation !== snapshotGeneration) return
+                myRank = rankSnap.data().count + 1
+              } catch {
+                if (generation !== snapshotGeneration) return
+                myRank = entries.length >= 20 ? 21 : entries.length + 1
+              }
             } else {
-              const rankQuery = query(
-                collection(db, 'users'),
-                where('collectionCount', '>', 0),
-              )
-              const rankSnap = await getCountFromServer(rankQuery)
-              if (generation !== snapshotGeneration) return
-              myRank = rankSnap.data().count + 1
+              try {
+                const rankQuery = query(
+                  collection(db, 'users'),
+                  where('collectionCount', '>', 0),
+                )
+                const rankSnap = await getCountFromServer(rankQuery)
+                if (generation !== snapshotGeneration) return
+                myRank = rankSnap.data().count + 1
+              } catch {
+                if (generation !== snapshotGeneration) return
+                myRank = entries.length + 1
+              }
             }
           }
         }
