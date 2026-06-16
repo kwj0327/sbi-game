@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { GameFooterStatus } from '../components/GameFooterStatus'
 import { GameFooterBar } from '../components/GameFooterBar'
 import { ClawGameSuccessPopup } from '../components/claw-game/ClawGameSuccessPopup'
@@ -42,6 +43,7 @@ import './Game2.css'
 
 type Game2Props = {
   onExit: () => void
+  onGoToAttendance: () => void
 }
 
 function getClawStatusMessage(phase: Game2ClawPhase, hasHeldDoll: boolean) {
@@ -65,7 +67,7 @@ function getClawStatusMessage(phase: Game2ClawPhase, hasHeldDoll: boolean) {
   }
 }
 
-export function Game2({ onExit }: Game2Props) {
+export function Game2({ onExit, onGoToAttendance }: Game2Props) {
   const [claw, setClaw] = useState<Game2ClawState>(getDefaultGame2ClawState)
   const [dolls, setDolls] = useState<Game2DollState[]>(() => {
     if (GAME2_SPAWN_DOLL_COUNT <= 0) return []
@@ -74,6 +76,7 @@ export function Game2({ onExit }: Game2Props) {
   })
   const [successDollImage, setSuccessDollImage] = useState<string | null>(null)
   const [playNotice, setPlayNotice] = useState('')
+  const [ticketPopupOpen, setTicketPopupOpen] = useState(false)
   const clawRef = useRef(claw)
   clawRef.current = claw
   const dollsRef = useRef(dolls)
@@ -103,7 +106,7 @@ export function Game2({ onExit }: Game2Props) {
     if (clawRef.current.phase !== 'idle') return
 
     if (spendClawCoins(DRAW_TICKET_PLAY_COST) === null) {
-      setPlayNotice('뽑기 티켓이 부족해요')
+      setTicketPopupOpen(true)
       return
     }
 
@@ -672,30 +675,42 @@ export function Game2({ onExit }: Game2Props) {
   }, [])
 
   return (
-    <MobileLayout
-      onExit={onExit}
-      footer={
-        <GameFooterBar className="game-footer-bar--game2" status={<GameFooterStatus />}>
-          <Game2PlayControls
-            onMove={handleMove}
-            onDescend={handleDescend}
-            disabled={controlsLocked}
+    <>
+      <MobileLayout
+        onExit={onExit}
+        footer={
+          <GameFooterBar className="game-footer-bar--game2" status={<GameFooterStatus />}>
+            <Game2PlayControls
+              onMove={handleMove}
+              onDescend={handleDescend}
+              disabled={controlsLocked}
+            />
+          </GameFooterBar>
+        }
+      >
+        <div className="game2">
+          <Game2InstructionBar
+            message={playNotice || getClawStatusMessage(claw.phase, claw.heldDollId !== null)}
           />
-        </GameFooterBar>
-      }
-    >
-      <div className="game2">
-        <Game2InstructionBar
-          message={playNotice || getClawStatusMessage(claw.phase, claw.heldDollId !== null)}
+          <Game2Viewport ref={viewportRef} claw={claw} dolls={dolls} />
+          {successDollImage !== null ? (
+            <ClawGameSuccessPopup
+              imageSrc={successDollImage}
+              onConfirm={() => setSuccessDollImage(null)}
+            />
+          ) : null}
+        </div>
+      </MobileLayout>
+
+      {ticketPopupOpen ? (
+        <DrawTicketInsufficientPopup
+          onClose={() => setTicketPopupOpen(false)}
+          onGoToAttendance={() => {
+            setTicketPopupOpen(false)
+            onGoToAttendance()
+          }}
         />
-        <Game2Viewport ref={viewportRef} claw={claw} dolls={dolls} />
-        {successDollImage !== null ? (
-          <ClawGameSuccessPopup
-            imageSrc={successDollImage}
-            onConfirm={() => setSuccessDollImage(null)}
-          />
-        ) : null}
-      </div>
-    </MobileLayout>
+      ) : null}
+    </>
   )
 }

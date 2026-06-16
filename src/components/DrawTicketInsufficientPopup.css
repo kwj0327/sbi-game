@@ -1,0 +1,132 @@
+.draw-ticket-insufficient-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.draw-ticket-insufficient-popup__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgb(15 15 26 / 52%);
+  backdrop-filter: blur(2px);
+  animation: draw-ticket-insufficient-fade-in 0.22s ease;
+}
+
+.draw-ticket-insufficient-popup__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 280px);
+  padding: 28px 24px 22px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(180deg, #fff 0%, #f7f7fb 100%);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+  animation: draw-ticket-insufficient-pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.draw-ticket-insufficient-popup__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+.draw-ticket-insufficient-popup__subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.draw-ticket-insufficient-popup__ticket-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 18px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 35%, rgb(var(--color-primary-rgb) / 10%) 0%, transparent 68%),
+    var(--color-surface-elevated);
+}
+
+.draw-ticket-insufficient-popup__ticket-icon {
+  margin: 0 auto;
+  opacity: 0.72;
+}
+
+.draw-ticket-insufficient-popup__need {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.draw-ticket-insufficient-popup__primary {
+  width: 100%;
+  min-height: var(--touch-min);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  touch-action: manipulation;
+  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+  box-shadow: 0 8px 18px rgb(var(--color-primary-rgb) / 34%);
+}
+
+.draw-ticket-insufficient-popup__primary:active {
+  transform: scale(0.98);
+}
+
+.draw-ticket-insufficient-popup__secondary {
+  width: 100%;
+  min-height: 40px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  touch-action: manipulation;
+  background: transparent;
+}
+
+.draw-ticket-insufficient-popup__secondary:active {
+  transform: scale(0.98);
+}
+
+@keyframes draw-ticket-insufficient-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-ticket-insufficient-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

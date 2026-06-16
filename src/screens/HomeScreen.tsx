@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { PointAmount } from '../components/PointAmount'
 import { TicketAmount } from '../components/TicketAmount'
 import { AttendancePanel } from '../components/AttendancePanel'
@@ -14,18 +13,19 @@ import { usePoints } from '../hooks/usePoints'
 import '../App.css'
 
 type HomeScreenProps = {
+  activeTab: BottomNavTab
+  onTabChange: (tab: BottomNavTab) => void
   onSelectGame: (gameId: GameId) => void
 }
 
-export function HomeScreen({ onSelectGame }: HomeScreenProps) {
-  const [tab, setTab] = useState<BottomNavTab>('home')
+export function HomeScreen({ activeTab, onTabChange, onSelectGame }: HomeScreenProps) {
   const { summary } = useDollCollection(ALL_DOLL_COUNT)
   const { points, loading: pointsLoading } = usePoints()
   const { coins: tickets } = useClawCoins()
 
   return (
-    <MobileLayout scrollable footer={<BottomNav activeTab={tab} onSelectTab={setTab} />}>
-      {tab === 'home' ? (
+    <MobileLayout scrollable footer={<BottomNav activeTab={activeTab} onSelectTab={onTabChange} />}>
+      {activeTab === 'home' ? (
         <>
           <section className="hero">
             <h2 className="hero__title">게임 선택</h2>
@@ -88,11 +88,11 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
         </>
       ) : null}
 
-      {tab === 'ranking' ? <RankingPanel /> : null}
+      {activeTab === 'ranking' ? <RankingPanel /> : null}
 
-      {tab === 'attendance' ? <AttendancePanel /> : null}
+      {activeTab === 'attendance' ? <AttendancePanel /> : null}
 
-      {tab === 'points' ? <PointsPanel /> : null}
+      {activeTab === 'points' ? <PointsPanel /> : null}
     </MobileLayout>
   )
 }

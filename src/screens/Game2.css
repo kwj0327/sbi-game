@@ -176,6 +176,8 @@
   line-height: 1;
   font-weight: 700;
   color: #fff;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   box-shadow:
     0 4px 12px rgb(var(--color-primary-rgb) / 32%),

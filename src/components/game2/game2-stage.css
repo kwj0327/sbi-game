@@ -16,7 +16,7 @@
   width: auto;
   max-width: 100%;
   aspect-ratio: var(--g2-aspect-w) / var(--g2-aspect-h);
-  overflow: visible;
+  overflow: hidden;
   background: transparent;
   --g2-stage-scale: 1;
   --g2-claw-rail-y: 8.5%;

@@ -46,6 +46,8 @@
   font-size: clamp(15px, 4.1vw, 16px);
   font-weight: 700;
   color: #fff;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   box-shadow:
     0 8px 22px rgb(var(--color-primary-rgb) / 38%),

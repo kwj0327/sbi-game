@@ -119,6 +119,8 @@
 }
 
 .mobile-footer {
+  position: relative;
+  z-index: 20;
   flex-shrink: 0;
   padding:
     8px

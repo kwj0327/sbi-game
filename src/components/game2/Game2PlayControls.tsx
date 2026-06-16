@@ -1,4 +1,5 @@
 import type { Game2MoveDirection } from './useGame2DirectionRepeat'
+import { bindReliableTap } from '../bindReliableTap'
 import { Game2Dpad } from './Game2Dpad'
 import { Game2Joystick } from './Game2Joystick'
 import { useMobileViewport } from './useMobileViewport'
@@ -25,7 +26,7 @@ export function Game2PlayControls({ onMove, onDescend, disabled = false }: Game2
         className="game2-descend-btn"
         aria-label="하강"
         disabled={disabled}
-        onClick={onDescend}
+        {...bindReliableTap(onDescend, disabled)}
       >
         ↓
       </button>

@@ -10,6 +10,7 @@ import {
   ROD_TIP_PX,
 } from '../components/claw-game/constants'
 import type { DollState, GamePhase } from '../components/claw-game/types'
+import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, spendClawCoins } from '../game/clawCoins'
 import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
@@ -46,9 +47,10 @@ function computeRodTravelPx(orbit: HTMLElement, strikeAngle: number, orbitScale:
 
 type ClawGameProps = {
   onExit: () => void
+  onGoToAttendance: () => void
 }
 
-export function ClawGame({ onExit }: ClawGameProps) {
+export function ClawGame({ onExit, onGoToAttendance }: ClawGameProps) {
   const [phase, setPhase] = useState<GamePhase>('spinning')
   const [trackOffset, setTrackOffset] = useState(0)
   const [rodProgress, setRodProgress] = useState(0)
@@ -67,6 +69,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
   const [rodTravelPx, setRodTravelPx] = useState(96)
   const [orbitSize, setOrbitSize] = useState({ w: 0, h: 0 })
   const [orbitScale, setOrbitScale] = useState(1)
+  const [ticketPopupOpen, setTicketPopupOpen] = useState(false)
 
   useEffect(() => {
     dollsRef.current = dolls
@@ -159,7 +162,7 @@ export function ClawGame({ onExit }: ClawGameProps) {
     }
 
     if (spendClawCoins(DRAW_TICKET_PLAY_COST) === null) {
-      setResultMessage('뽑기 티켓이 부족해요')
+      setTicketPopupOpen(true)
       return
     }
 
@@ -245,32 +248,44 @@ export function ClawGame({ onExit }: ClawGameProps) {
       : resultMessage || '막대기가 내려가는 중...'
 
   return (
-    <MobileLayout
-      onExit={onExit}
-      footer={<BottomButtons phase={phase} onStop={handlePlay} />}
-    >
-      <div className="claw-game">
-        <InstructionBar message={instruction} />
-        <div className="claw-game__machine">
-          <MachineViewport
-            orbitRef={orbitRef}
-            phase={phase}
-            rodProgress={rodProgress}
-            rodTravelPx={rodTravelPx}
-            visibleDolls={visibleDolls}
-            sessionDollIndices={sessionDollIndices}
-            strikeTargetIndex={strikeTargetIndex}
-            orbitSize={orbitSize}
-            orbitScale={orbitScale}
-          />
-          {successDollIndex !== null ? (
-            <ClawGameSuccessPopup
-              imageSrc={ALL_DOLL_IMAGES[sessionDollIndices[successDollIndex]]}
-              onConfirm={resetRound}
+    <>
+      <MobileLayout
+        onExit={onExit}
+        footer={<BottomButtons phase={phase} onStop={handlePlay} />}
+      >
+        <div className="claw-game">
+          <InstructionBar message={instruction} />
+          <div className="claw-game__machine">
+            <MachineViewport
+              orbitRef={orbitRef}
+              phase={phase}
+              rodProgress={rodProgress}
+              rodTravelPx={rodTravelPx}
+              visibleDolls={visibleDolls}
+              sessionDollIndices={sessionDollIndices}
+              strikeTargetIndex={strikeTargetIndex}
+              orbitSize={orbitSize}
+              orbitScale={orbitScale}
             />
-          ) : null}
+            {successDollIndex !== null ? (
+              <ClawGameSuccessPopup
+                imageSrc={ALL_DOLL_IMAGES[sessionDollIndices[successDollIndex]]}
+                onConfirm={resetRound}
+              />
+            ) : null}
+          </div>
         </div>
-      </div>
-    </MobileLayout>
+      </MobileLayout>
+
+      {ticketPopupOpen ? (
+        <DrawTicketInsufficientPopup
+          onClose={() => setTicketPopupOpen(false)}
+          onGoToAttendance={() => {
+            setTicketPopupOpen(false)
+            onGoToAttendance()
+          }}
+        />
+      ) : null}
+    </>
   )
 }
