@@ -103,7 +103,7 @@
   color: var(--color-primary);
 }
 
-.ranking-panel__mine-points {
+.ranking-panel__mine-score {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-accent);
@@ -160,7 +160,7 @@
   white-space: nowrap;
 }
 
-.ranking-list__points {
+.ranking-list__score {
   font-size: 14px;
   font-weight: 700;
   color: var(--color-accent);

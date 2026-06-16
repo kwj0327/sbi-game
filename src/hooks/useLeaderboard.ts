@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
 import {
-  subscribePointsLeaderboard,
+  subscribeCollectionLeaderboard,
   type LeaderboardSnapshot,
 } from '../game/firestoreLeaderboard'
 
 const EMPTY: LeaderboardSnapshot = {
   entries: [],
   myRank: null,
-  myPoints: 0,
+  myCollectionCount: 0,
 }
 
 export function useLeaderboard() {
@@ -31,7 +31,7 @@ export function useLeaderboard() {
     setError(null)
 
     const unsubscribe =
-      subscribePointsLeaderboard(
+      subscribeCollectionLeaderboard(
         user.uid,
         (next) => {
           setSnapshot(next)
@@ -56,7 +56,7 @@ export function useLeaderboard() {
   return {
     entries: snapshot.entries,
     myRank: snapshot.myRank,
-    myPoints: snapshot.myPoints,
+    myCollectionCount: snapshot.myCollectionCount,
     loading: !ready || loading,
     error,
   }

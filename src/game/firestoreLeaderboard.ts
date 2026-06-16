@@ -14,14 +14,14 @@ import {
 
 export type LeaderboardEntry = {
   uid: string
-  points: number
+  collectionCount: number
   displayName: string
 }
 
 export type LeaderboardSnapshot = {
   entries: LeaderboardEntry[]
   myRank: number | null
-  myPoints: number
+  myCollectionCount: number
 }
 
 function formatPlayerName(uid: string, displayName?: unknown) {
@@ -29,7 +29,7 @@ function formatPlayerName(uid: string, displayName?: unknown) {
   return `플레이어 ·${uid.slice(-4).toUpperCase()}`
 }
 
-export function subscribePointsLeaderboard(
+export function subscribeCollectionLeaderboard(
   uid: string | null,
   onChange: (snapshot: LeaderboardSnapshot) => void,
   onError?: (error: Error) => void,
@@ -37,7 +37,11 @@ export function subscribePointsLeaderboard(
   const db = getFirestoreDb()
   if (!db) return null
 
-  const topQuery = query(collection(db, 'users'), orderBy('points', 'desc'), limit(20))
+  const topQuery = query(
+    collection(db, 'users'),
+    orderBy('collectionCount', 'desc'),
+    limit(20),
+  )
 
   return onSnapshot(
     topQuery,
@@ -46,39 +50,42 @@ export function subscribePointsLeaderboard(
         const data = docSnap.data()
         return {
           uid: docSnap.id,
-          points: typeof data.points === 'number' ? data.points : 0,
+          collectionCount:
+            typeof data.collectionCount === 'number' ? data.collectionCount : 0,
           displayName: formatPlayerName(docSnap.id, data.displayName),
         }
       })
 
       let myRank: number | null = null
-      let myPoints = 0
+      let myCollectionCount = 0
 
       if (uid) {
         const mine = entries.find((entry) => entry.uid === uid)
 
         if (mine) {
-          myPoints = mine.points
+          myCollectionCount = mine.collectionCount
           myRank = entries.findIndex((entry) => entry.uid === uid) + 1
         } else {
           const userRef = getUserDocRef(uid)
           if (userRef) {
             const userSnap = await getDoc(userRef)
-            myPoints =
-              typeof userSnap.data()?.points === 'number' ? userSnap.data()!.points : 0
+            myCollectionCount =
+              typeof userSnap.data()?.collectionCount === 'number'
+                ? userSnap.data()!.collectionCount
+                : 0
           }
 
-          if (myPoints > 0) {
+          if (myCollectionCount > 0) {
             const rankQuery = query(
               collection(db, 'users'),
-              where('points', '>', myPoints),
+              where('collectionCount', '>', myCollectionCount),
             )
             const rankSnap = await getCountFromServer(rankQuery)
             myRank = rankSnap.data().count + 1
           } else {
             const rankQuery = query(
               collection(db, 'users'),
-              where('points', '>', 0),
+              where('collectionCount', '>', 0),
             )
             const rankSnap = await getCountFromServer(rankQuery)
             myRank = rankSnap.data().count + 1
@@ -86,7 +93,7 @@ export function subscribePointsLeaderboard(
         }
       }
 
-      onChange({ entries, myRank, myPoints })
+      onChange({ entries, myRank, myCollectionCount })
     },
     (error) => {
       onError?.(error)

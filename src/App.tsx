@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { FirebaseProvider } from './context/FirebaseContext'
+import { ALL_DOLL_COUNT } from './game/dollConfig'
 import { type GameId } from './game/games'
+import { useCollectionSync } from './hooks/useCollectionSync'
 import { ClawGame } from './screens/ClawGame'
 import { Game2 } from './screens/Game2'
 import { Game3 } from './screens/Game3'
@@ -10,6 +12,7 @@ type Screen = 'home' | GameId
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>('home')
+  useCollectionSync(ALL_DOLL_COUNT)
 
   if (screen === 'claw') {
     return <ClawGame onExit={() => setScreen('home')} />

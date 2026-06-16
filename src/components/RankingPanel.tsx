@@ -7,7 +7,7 @@ import './RankingPanel.css'
 
 export function RankingPanel() {
   const { user, ready, error: authError } = useFirebaseUser()
-  const { entries, myRank, myPoints, loading, error } = useLeaderboard()
+  const { entries, myRank, myCollectionCount, loading, error } = useLeaderboard()
   const {
     profile,
     loading: profileLoading,
@@ -36,9 +36,9 @@ export function RankingPanel() {
     <section className="ranking-panel" aria-labelledby="ranking-title">
       <header className="ranking-panel__header">
         <h2 id="ranking-title" className="ranking-panel__title">
-          포인트 랭킹
+          수집 랭킹
         </h2>
-        <p className="ranking-panel__subtitle">누적 포인트 기준 상위 플레이어</p>
+        <p className="ranking-panel__subtitle">수집한 인형 종류 기준 상위 플레이어</p>
       </header>
 
       {!ready ? (
@@ -92,7 +92,9 @@ export function RankingPanel() {
             <span className="ranking-panel__mine-value">
               {loading ? '…' : myRank ? `${myRank}위` : '-'}
             </span>
-            <span className="ranking-panel__mine-points">{loading ? '…' : `${myPoints}P`}</span>
+            <span className="ranking-panel__mine-score">
+              {loading ? '…' : `${myCollectionCount}종`}
+            </span>
           </div>
         </>
       ) : null}
@@ -116,7 +118,7 @@ export function RankingPanel() {
               >
                 <span className="ranking-list__rank">{rank}</span>
                 <span className="ranking-list__name">{entry.displayName}</span>
-                <span className="ranking-list__points">{entry.points}P</span>
+                <span className="ranking-list__score">{entry.collectionCount}종</span>
               </li>
             )
           })}

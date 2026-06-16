@@ -12,6 +12,7 @@ import { getFirestoreDb } from '../lib/firebase'
 
 export type UserProfile = {
   points: number
+  collectionCount: number
   displayName: string
 }
 
@@ -33,6 +34,7 @@ export async function ensureUserDocument(uid: string): Promise<void> {
 
   await setDoc(ref, {
     points: 0,
+    collectionCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -52,6 +54,10 @@ export function subscribeUserProfile(
       const data = snapshot.data()
       onChange({
         points: typeof data?.points === 'number' && data.points >= 0 ? data.points : 0,
+        collectionCount:
+          typeof data?.collectionCount === 'number' && data.collectionCount >= 0
+            ? data.collectionCount
+            : 0,
         displayName: typeof data?.displayName === 'string' ? data.displayName : '',
       })
     },
@@ -59,6 +65,19 @@ export function subscribeUserProfile(
       onError?.(error)
     },
   )
+}
+
+export async function syncUserCollectionCount(uid: string, count: number): Promise<void> {
+  if (count < 0) return
+
+  const ref = getUserDocRef(uid)
+  if (!ref) return
+
+  await ensureUserDocument(uid)
+  await updateDoc(ref, {
+    collectionCount: count,
+    updatedAt: serverTimestamp(),
+  })
 }
 
 export async function addUserPoints(uid: string, amount: number): Promise<number | null> {

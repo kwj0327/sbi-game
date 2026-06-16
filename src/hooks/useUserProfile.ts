@@ -10,7 +10,11 @@ import {
 
 export function useUserProfile() {
   const { user, ready } = useFirebaseUser()
-  const [profile, setProfile] = useState<UserProfile>({ points: 0, displayName: '' })
+  const [profile, setProfile] = useState<UserProfile>({
+    points: 0,
+    collectionCount: 0,
+    displayName: '',
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +23,7 @@ export function useUserProfile() {
     if (!ready) return
 
     if (!user) {
-      setProfile({ points: 0, displayName: '' })
+      setProfile({ points: 0, collectionCount: 0, displayName: '' })
       setLoading(false)
       return
     }
