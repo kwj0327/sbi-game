@@ -43,6 +43,11 @@
 }
 
 .ranking-panel__mine-score.point-amount .point-amount__value {
-  font-size: 18px;
+  font-size: 14px;
   color: var(--color-accent);
+}
+
+.ranking-panel__mine-score.point-amount .point-coin-icon--sm {
+  width: 16px;
+  height: 16px;
 }

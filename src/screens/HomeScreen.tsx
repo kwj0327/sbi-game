@@ -24,10 +24,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
   const { coins: tickets } = useClawCoins()
 
   return (
-    <MobileLayout
-      scrollable={tab !== 'ranking'}
-      footer={<BottomNav activeTab={tab} onSelectTab={setTab} />}
-    >
+    <MobileLayout scrollable footer={<BottomNav activeTab={tab} onSelectTab={setTab} />}>
       {tab === 'home' ? (
         <>
           <section className="hero">
