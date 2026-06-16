@@ -7,7 +7,7 @@ import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
 import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
-import { DRAW_TICKET_PLAY_COST, spendClawCoins } from '../game/clawCoins'
+import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { ALL_DOLL_IMAGES, pickRandomGame2DollIndices } from '../game/dollConfig'
 import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
 import {
@@ -104,6 +104,11 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
 
   const handleDescend = useCallback(() => {
     if (clawRef.current.phase !== 'idle') return
+
+    if (getClawCoinBalance() < DRAW_TICKET_PLAY_COST) {
+      setTicketPopupOpen(true)
+      return
+    }
 
     if (spendClawCoins(DRAW_TICKET_PLAY_COST) === null) {
       setTicketPopupOpen(true)

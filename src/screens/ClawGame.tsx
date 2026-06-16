@@ -12,7 +12,7 @@ import {
 import type { DollState, GamePhase } from '../components/claw-game/types'
 import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { MobileLayout } from '../components/MobileLayout'
-import { DRAW_TICKET_PLAY_COST, spendClawCoins } from '../game/clawCoins'
+import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
 import {
   ALL_DOLL_IMAGES,
@@ -155,6 +155,11 @@ export function ClawGame({ onExit, onGoToAttendance }: ClawGameProps) {
 
   const handlePlay = useCallback(() => {
     if (phaseRef.current !== 'spinning') return
+
+    if (getClawCoinBalance() < DRAW_TICKET_PLAY_COST) {
+      setTicketPopupOpen(true)
+      return
+    }
 
     const strike = getStrikeTarget(trackOffsetRef.current, getCapturedFlags())
     if (strike.isEmptySlot) {

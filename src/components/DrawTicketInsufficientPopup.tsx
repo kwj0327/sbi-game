@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { DRAW_TICKET_PLAY_COST } from '../game/clawCoins'
 import { DrawTicketIcon } from './DrawTicketIcon'
 import { bindReliableTap } from './bindReliableTap'
@@ -12,13 +13,13 @@ export function DrawTicketInsufficientPopup({
   onClose,
   onGoToAttendance,
 }: DrawTicketInsufficientPopupProps) {
-  return (
+  return createPortal(
     <div className="draw-ticket-insufficient-popup" role="presentation">
       <button
         type="button"
         className="draw-ticket-insufficient-popup__backdrop"
         aria-label="팝업 닫기"
-        onClick={onClose}
+        {...bindReliableTap(onClose)}
       />
       <div
         className="draw-ticket-insufficient-popup__card"
@@ -55,6 +56,7 @@ export function DrawTicketInsufficientPopup({
           닫기
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
