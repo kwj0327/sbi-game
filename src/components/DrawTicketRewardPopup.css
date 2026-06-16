@@ -1,0 +1,119 @@
+.draw-ticket-reward-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.draw-ticket-reward-popup__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgb(15 15 26 / 52%);
+  backdrop-filter: blur(2px);
+  animation: draw-ticket-reward-fade-in 0.22s ease;
+}
+
+.draw-ticket-reward-popup__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 280px);
+  padding: 28px 24px 24px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(180deg, #fff 0%, #f7f7fb 100%);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+  animation: draw-ticket-reward-pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.draw-ticket-reward-popup__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+.draw-ticket-reward-popup__subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.draw-ticket-reward-popup__ticket-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 20px 0 12px;
+  padding: 20px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 35%, rgb(var(--color-primary-rgb) / 12%) 0%, transparent 68%),
+    var(--color-surface-elevated);
+}
+
+.draw-ticket-reward-popup__ticket-icon {
+  margin: 0 auto;
+}
+
+.draw-ticket-reward-popup__ticket-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.draw-ticket-reward-popup__total {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.draw-ticket-reward-popup__confirm {
+  width: 100%;
+  min-height: var(--touch-min);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+  box-shadow: 0 8px 18px rgb(var(--color-primary-rgb) / 34%);
+}
+
+.draw-ticket-reward-popup__confirm:active {
+  transform: scale(0.98);
+}
+
+@keyframes draw-ticket-reward-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-ticket-reward-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

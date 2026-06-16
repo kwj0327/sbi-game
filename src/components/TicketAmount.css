@@ -1,0 +1,25 @@
+.ticket-amount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.ticket-amount__value {
+  font-weight: 700;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.ticket-amount--sm .ticket-amount__value {
+  font-size: 22px;
+}
+
+.ticket-amount--lg .ticket-amount__value {
+  font-size: 32px;
+}
+
+.stat-card .ticket-amount {
+  width: 100%;
+}

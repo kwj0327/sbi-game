@@ -1,10 +1,14 @@
 import { useState } from 'react'
+import { PointAmount } from '../components/PointAmount'
+import { TicketAmount } from '../components/TicketAmount'
 import { AttendancePanel } from '../components/AttendancePanel'
+import { PointsPanel } from '../components/PointsPanel'
 import { RankingPanel } from '../components/RankingPanel'
 import { BottomNav, type BottomNavTab } from '../components/BottomNav'
 import { MobileLayout } from '../components/MobileLayout'
 import { ALL_DOLL_COUNT } from '../game/dollConfig'
 import { GAMES, type GameId } from '../game/games'
+import { useClawCoins } from '../hooks/useClawCoins'
 import { useDollCollection } from '../hooks/useDollCollection'
 import { usePoints } from '../hooks/usePoints'
 import '../App.css'
@@ -17,6 +21,7 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
   const [tab, setTab] = useState<BottomNavTab>('home')
   const { summary } = useDollCollection(ALL_DOLL_COUNT)
   const { points, loading: pointsLoading } = usePoints()
+  const { coins: tickets } = useClawCoins()
 
   return (
     <MobileLayout
@@ -26,6 +31,8 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
       {tab === 'home' ? (
         <>
           <section className="hero">
+            <h2 className="hero__title">게임 선택</h2>
+            <p className="hero__subtitle">플레이할 게임을 골라 주세요.</p>
             <ul className="game-list">
               {GAMES.map((game) => (
                 <li key={game.id}>
@@ -61,16 +68,24 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
 
           <section className="stats" aria-label="내 수집 현황">
             <article className="stat-card">
+              {pointsLoading ? (
+                <span className="stat-card__value">…</span>
+              ) : (
+                <PointAmount value={points} size="sm" className="stat-card__value" />
+              )}
+              <span className="stat-card__label">포인트</span>
+            </article>
+            <article className="stat-card">
+              <TicketAmount value={tickets} size="sm" className="stat-card__value" />
+              <span className="stat-card__label">뽑기 티켓</span>
+            </article>
+            <article className="stat-card">
               <span className="stat-card__value">{summary.total}</span>
               <span className="stat-card__label">획득 인형</span>
             </article>
             <article className="stat-card">
               <span className="stat-card__value">{summary.uniqueCount}</span>
               <span className="stat-card__label">수집 종류</span>
-            </article>
-            <article className="stat-card">
-              <span className="stat-card__value">{pointsLoading ? '…' : points}</span>
-              <span className="stat-card__label">포인트</span>
             </article>
           </section>
         </>
@@ -79,6 +94,8 @@ export function HomeScreen({ onSelectGame }: HomeScreenProps) {
       {tab === 'ranking' ? <RankingPanel /> : null}
 
       {tab === 'attendance' ? <AttendancePanel /> : null}
+
+      {tab === 'points' ? <PointsPanel /> : null}
     </MobileLayout>
   )
 }

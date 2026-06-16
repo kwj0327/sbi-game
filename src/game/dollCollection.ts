@@ -1,3 +1,5 @@
+import { addPoints, DOLL_COLLECT_POINT_REWARD, DOLL_EXCHANGE_POINT_VALUE } from './points'
+
 export type CollectionSource = 'claw' | 'game2'
 
 export type CollectedDollEntry = {
@@ -50,6 +52,11 @@ export function getCollectedDolls(): CollectedDollEntry[] {
   return readEntries()
 }
 
+export function hasCollectedDollIndex(dollIndex: number): boolean {
+  if (dollIndex < 0) return false
+  return readEntries().some((entry) => entry.dollIndex === dollIndex)
+}
+
 export function getCollectionSummary(dollCount: number): DollCollectionSummary {
   const countsByIndex = Array.from({ length: dollCount }, () => 0)
 
@@ -78,9 +85,38 @@ export function addCollectedDoll(
   }
 
   writeEntries([...readEntries(), entry])
+  addPoints(DOLL_COLLECT_POINT_REWARD)
   return entry
 }
 
 export function clearCollectedDolls() {
   writeEntries([])
+}
+
+export type ExchangeDollsResult = {
+  pointsEarned: number
+  remainingCount: number
+}
+
+/** 수집 인형을 포인트로 교환 — 해당 종류 인형 quantity개 제거 */
+export function exchangeCollectedDolls(
+  dollIndex: number,
+  quantity: number,
+): ExchangeDollsResult | null {
+  if (dollIndex < 0 || quantity <= 0) return null
+
+  const entries = readEntries()
+  const matching = entries.filter((entry) => entry.dollIndex === dollIndex)
+  if (matching.length < quantity) return null
+
+  const removeIds = new Set(matching.slice(-quantity).map((entry) => entry.id))
+  writeEntries(entries.filter((entry) => !removeIds.has(entry.id)))
+
+  const pointsEarned = quantity * DOLL_EXCHANGE_POINT_VALUE
+  addPoints(pointsEarned)
+
+  return {
+    pointsEarned,
+    remainingCount: matching.length - quantity,
+  }
 }

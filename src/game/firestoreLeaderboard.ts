@@ -14,14 +14,14 @@ import {
 
 export type LeaderboardEntry = {
   uid: string
-  collectionCount: number
+  points: number
   displayName: string
 }
 
 export type LeaderboardSnapshot = {
   entries: LeaderboardEntry[]
   myRank: number | null
-  myCollectionCount: number
+  myPoints: number
   totalPlayers: number
 }
 
@@ -30,7 +30,7 @@ function formatPlayerName(uid: string, displayName?: unknown) {
   return `플레이어 ·${uid.slice(-4).toUpperCase()}`
 }
 
-export function subscribeCollectionLeaderboard(
+export function subscribePointsLeaderboard(
   uid: string | null,
   onChange: (snapshot: LeaderboardSnapshot) => void,
   onError?: (error: Error) => void,
@@ -40,7 +40,7 @@ export function subscribeCollectionLeaderboard(
 
   const topQuery = query(
     collection(db, 'users'),
-    orderBy('collectionCount', 'desc'),
+    orderBy('points', 'desc'),
     limit(20),
   )
 
@@ -56,14 +56,13 @@ export function subscribeCollectionLeaderboard(
           const data = docSnap.data()
           return {
             uid: docSnap.id,
-            collectionCount:
-              typeof data.collectionCount === 'number' ? data.collectionCount : 0,
+            points: typeof data.points === 'number' ? data.points : 0,
             displayName: formatPlayerName(docSnap.id, data.displayName),
           }
         })
 
         let myRank: number | null = null
-        let myCollectionCount = 0
+        let myPoints = 0
         let totalPlayers = 0
 
         try {
@@ -78,7 +77,7 @@ export function subscribeCollectionLeaderboard(
           const mine = entries.find((entry) => entry.uid === uid)
 
           if (mine) {
-            myCollectionCount = mine.collectionCount
+            myPoints = mine.points
             myRank = entries.findIndex((entry) => entry.uid === uid) + 1
           } else {
             const userRef = getUserDocRef(uid)
@@ -86,17 +85,15 @@ export function subscribeCollectionLeaderboard(
               const userSnap = await getDoc(userRef)
               if (generation !== snapshotGeneration) return
 
-              myCollectionCount =
-                typeof userSnap.data()?.collectionCount === 'number'
-                  ? userSnap.data()!.collectionCount
-                  : 0
+              myPoints =
+                typeof userSnap.data()?.points === 'number' ? userSnap.data()!.points : 0
             }
 
-            if (myCollectionCount > 0) {
+            if (myPoints > 0) {
               try {
                 const rankQuery = query(
                   collection(db, 'users'),
-                  where('collectionCount', '>', myCollectionCount),
+                  where('points', '>', myPoints),
                 )
                 const rankSnap = await getCountFromServer(rankQuery)
                 if (generation !== snapshotGeneration) return
@@ -109,7 +106,7 @@ export function subscribeCollectionLeaderboard(
               try {
                 const rankQuery = query(
                   collection(db, 'users'),
-                  where('collectionCount', '>', 0),
+                  where('points', '>', 0),
                 )
                 const rankSnap = await getCountFromServer(rankQuery)
                 if (generation !== snapshotGeneration) return
@@ -123,7 +120,7 @@ export function subscribeCollectionLeaderboard(
         }
 
         if (generation !== snapshotGeneration) return
-        onChange({ entries, myRank, myCollectionCount, totalPlayers })
+        onChange({ entries, myRank, myPoints, totalPlayers })
       })().catch((error: unknown) => {
         if (generation !== snapshotGeneration) return
         onError?.(error instanceof Error ? error : new Error('랭킹을 불러오지 못했습니다.'))

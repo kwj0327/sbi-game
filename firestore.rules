@@ -16,10 +16,6 @@ service cloud.firestore {
           (
             request.resource.data.points is int
             && request.resource.data.points >= 0
-            && (
-              !resource.data.keys().hasAny(['points'])
-              || request.resource.data.points >= resource.data.points
-            )
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points', 'updatedAt'])
           )
           || (

@@ -22,14 +22,15 @@
 
 .attendance-panel__subtitle {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--color-text-muted);
   text-align: center;
 }
 
 .attendance-panel__stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
@@ -111,4 +112,24 @@
 .attendance-recent__label {
   font-size: 10px;
   color: var(--color-text-muted);
+}
+
+.attendance-recent__bonus {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+}
+
+.attendance-recent__bonus-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.attendance-recent__bonus-value {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-accent);
 }

@@ -11,7 +11,8 @@ import {
 } from '../components/claw-game/constants'
 import type { DollState, GamePhase } from '../components/claw-game/types'
 import { MobileLayout } from '../components/MobileLayout'
-import { addCollectedDoll } from '../game/dollCollection'
+import { DRAW_TICKET_PLAY_COST, spendClawCoins } from '../game/clawCoins'
+import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
 import {
   ALL_DOLL_IMAGES,
   DOLL_COUNT,
@@ -157,6 +158,11 @@ export function ClawGame({ onExit }: ClawGameProps) {
       return
     }
 
+    if (spendClawCoins(DRAW_TICKET_PLAY_COST) === null) {
+      setResultMessage('뽑기 티켓이 부족해요')
+      return
+    }
+
     setStrikeTargetIndex(strike.isHit ? strike.index : null)
     phaseRef.current = 'striking'
     setPhase('striking')
@@ -208,9 +214,15 @@ export function ClawGame({ onExit }: ClawGameProps) {
                 : doll,
             ),
           )
-          setSuccessDollIndex(strike.index)
-          addCollectedDoll(sessionDollIndices[strike.index], 'claw')
+          const dollIndex = sessionDollIndices[strike.index]
+          const isDuplicate = hasCollectedDollIndex(dollIndex)
+          addCollectedDoll(dollIndex, 'claw')
           setResultMessage('성공! 인형을 뽑았어요')
+          if (isDuplicate) {
+            window.setTimeout(() => resetRound(), RESULT_DELAY_MS)
+          } else {
+            setSuccessDollIndex(strike.index)
+          }
           return
         }
         resetRound()

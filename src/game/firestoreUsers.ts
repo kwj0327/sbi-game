@@ -1,7 +1,6 @@
 import {
   doc,
   getDoc,
-  increment,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -50,7 +49,39 @@ export async function ensureUserDocument(
   }
 }
 
-/** 앱 실행·로그인 시 로컬 수집 종류 수를 Firestore 랭킹 값으로 맞춤 */
+/** 로컬 포인트를 Firestore 랭킹 값으로 맞춤 (증가·감소 모두 반영) */
+export async function syncUserPoints(uid: string, localPoints: number): Promise<void> {
+  if (localPoints < 0) return
+
+  const ref = getUserDocRef(uid)
+  if (!ref) return
+
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) {
+    await setDoc(ref, {
+      points: 0,
+      collectionCount: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  }
+
+  const latest = await getDoc(ref)
+  const remotePoints = typeof latest.data()?.points === 'number' ? latest.data()!.points : 0
+
+  if (remotePoints === localPoints) return
+
+  await updateDoc(ref, {
+    points: localPoints,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function bootstrapUserPoints(uid: string, localPoints: number): Promise<void> {
+  await syncUserPoints(uid, localPoints)
+}
+
+/** 앱 실행·로그인 시 로컬 수집 종류 수를 Firestore에 맞춤 */
 export async function bootstrapUserCollection(uid: string, localUniqueCount: number): Promise<void> {
   if (localUniqueCount < 0) return
 
@@ -110,23 +141,6 @@ export function subscribeUserProfile(
 
 export async function syncUserCollectionCount(uid: string, count: number): Promise<void> {
   await bootstrapUserCollection(uid, count)
-}
-
-export async function addUserPoints(uid: string, amount: number): Promise<number | null> {
-  if (amount <= 0) return null
-
-  const ref = getUserDocRef(uid)
-  if (!ref) return null
-
-  await ensureUserDocument(uid)
-  await updateDoc(ref, {
-    points: increment(amount),
-    updatedAt: serverTimestamp(),
-  })
-
-  const snapshot = await getDoc(ref)
-  const points = snapshot.data()?.points
-  return typeof points === 'number' ? points : null
 }
 
 export function normalizeDisplayName(input: string): string | null {

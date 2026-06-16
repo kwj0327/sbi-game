@@ -30,7 +30,7 @@
 }
 
 .game-footer-bar--game1 {
-  --game-footer-row-height: 52px;
+  --game-footer-row-height: 64px;
   align-items: stretch;
 }
 
@@ -44,11 +44,11 @@
 }
 
 .game-footer-bar--game2 {
-  --game-footer-row-height: 88px;
   align-items: stretch;
 }
 
 .game-footer-bar--game2 .game-footer-bar__status {
-  min-height: var(--game-footer-row-height);
-  padding: 10px 12px;
+  min-height: 64px;
+  padding: 6px 10px;
+  align-self: center;
 }

@@ -2,7 +2,8 @@ import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { ALL_DOLL_COUNT } from '../game/dollConfig'
 import { getCollectionSummary } from '../game/dollCollection'
-import { bootstrapUserCollection } from '../game/firestoreUsers'
+import { bootstrapUserCollection, bootstrapUserPoints } from '../game/firestoreUsers'
+import { getLocalPointBalance } from '../game/points'
 import { getFirebaseAuth, isFirebaseConfigured } from '../lib/firebase'
 
 type FirebaseAuthState = {
@@ -34,7 +35,11 @@ export function useFirebaseAuth(): FirebaseAuthState {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const localUniqueCount = getCollectionSummary(ALL_DOLL_COUNT).uniqueCount
-        bootstrapUserCollection(user.uid, localUniqueCount).finally(() => {
+        const localPoints = getLocalPointBalance()
+        Promise.all([
+          bootstrapUserCollection(user.uid, localUniqueCount),
+          bootstrapUserPoints(user.uid, localPoints),
+        ]).finally(() => {
           setState({ ready: true, user, error: null })
         })
         return

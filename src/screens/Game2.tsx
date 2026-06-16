@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GameFooterStatus } from '../components/GameFooterStatus'
 import { GameFooterBar } from '../components/GameFooterBar'
 import { ClawGameSuccessPopup } from '../components/claw-game/ClawGameSuccessPopup'
 import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
 import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
+import { DRAW_TICKET_PLAY_COST, spendClawCoins } from '../game/clawCoins'
 import { ALL_DOLL_IMAGES, pickRandomGame2DollIndices } from '../game/dollConfig'
-import { addCollectedDoll } from '../game/dollCollection'
+import { addCollectedDoll, hasCollectedDollIndex } from '../game/dollCollection'
 import {
   GAME2_CLAW,
   GAME2_CLOSE_SIM,
@@ -71,6 +73,7 @@ export function Game2({ onExit }: Game2Props) {
     return createInitialGame2Dolls(sessionIndices.map((index) => ALL_DOLL_IMAGES[index]))
   })
   const [successDollImage, setSuccessDollImage] = useState<string | null>(null)
+  const [playNotice, setPlayNotice] = useState('')
   const clawRef = useRef(claw)
   clawRef.current = claw
   const dollsRef = useRef(dolls)
@@ -97,6 +100,15 @@ export function Game2({ onExit }: Game2Props) {
   }, [])
 
   const handleDescend = useCallback(() => {
+    if (clawRef.current.phase !== 'idle') return
+
+    if (spendClawCoins(DRAW_TICKET_PLAY_COST) === null) {
+      setPlayNotice('뽑기 티켓이 부족해요')
+      return
+    }
+
+    setPlayNotice('')
+
     setClaw((prev) => {
       if (prev.phase !== 'idle') return prev
       return {
@@ -162,8 +174,11 @@ export function Game2({ onExit }: Game2Props) {
         const captured = getGame2DollById(dollsRef.current, heldId)
         if (captured) {
           const dollIndex = ALL_DOLL_IMAGES.indexOf(captured.imageSrc)
-          if (dollIndex >= 0) addCollectedDoll(dollIndex, 'game2')
-          setSuccessDollImage(captured.imageSrc)
+          if (dollIndex >= 0) {
+            const isDuplicate = hasCollectedDollIndex(dollIndex)
+            addCollectedDoll(dollIndex, 'game2')
+            if (!isDuplicate) setSuccessDollImage(captured.imageSrc)
+          }
         }
         setDolls((prev) =>
           prev.map((doll) =>
@@ -512,8 +527,11 @@ export function Game2({ onExit }: Game2Props) {
           const captured = getGame2DollById(dollsRef.current, heldId)
           if (captured) {
             const dollIndex = ALL_DOLL_IMAGES.indexOf(captured.imageSrc)
-            if (dollIndex >= 0) addCollectedDoll(dollIndex, 'game2')
-            setSuccessDollImage(captured.imageSrc)
+            if (dollIndex >= 0) {
+              const isDuplicate = hasCollectedDollIndex(dollIndex)
+              addCollectedDoll(dollIndex, 'game2')
+              if (!isDuplicate) setSuccessDollImage(captured.imageSrc)
+            }
           }
           setDolls((prev) =>
             prev.map((doll) =>
@@ -657,7 +675,7 @@ export function Game2({ onExit }: Game2Props) {
     <MobileLayout
       onExit={onExit}
       footer={
-        <GameFooterBar className="game-footer-bar--game2">
+        <GameFooterBar className="game-footer-bar--game2" status={<GameFooterStatus />}>
           <Game2PlayControls
             onMove={handleMove}
             onDescend={handleDescend}
@@ -668,7 +686,7 @@ export function Game2({ onExit }: Game2Props) {
     >
       <div className="game2">
         <Game2InstructionBar
-          message={getClawStatusMessage(claw.phase, claw.heldDollId !== null)}
+          message={playNotice || getClawStatusMessage(claw.phase, claw.heldDollId !== null)}
         />
         <Game2Viewport ref={viewportRef} claw={claw} dolls={dolls} />
         {successDollImage !== null ? (

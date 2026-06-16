@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
-import { ALL_DOLL_COUNT } from '../game/dollConfig'
-import { getCollectionSummary } from '../game/dollCollection'
-import { bootstrapUserCollection } from '../game/firestoreUsers'
+import { bootstrapUserPoints } from '../game/firestoreUsers'
 import {
-  subscribeCollectionLeaderboard,
+  subscribePointsLeaderboard,
   type LeaderboardSnapshot,
 } from '../game/firestoreLeaderboard'
+import { getLocalPointBalance } from '../game/points'
 
 const EMPTY: LeaderboardSnapshot = {
   entries: [],
   myRank: null,
-  myCollectionCount: 0,
+  myPoints: 0,
   totalPlayers: 0,
 }
 
@@ -37,14 +36,14 @@ export function useLeaderboard() {
     setLoading(true)
     setError(null)
 
-    const localUniqueCount = getCollectionSummary(ALL_DOLL_COUNT).uniqueCount
+    const localPoints = getLocalPointBalance()
 
-    bootstrapUserCollection(user.uid, localUniqueCount)
+    bootstrapUserPoints(user.uid, localPoints)
       .then(() => {
         if (cancelled) return
 
         unsubscribe =
-          subscribeCollectionLeaderboard(
+          subscribePointsLeaderboard(
             user.uid,
             (next) => {
               if (cancelled) return
@@ -80,7 +79,7 @@ export function useLeaderboard() {
   return {
     entries: snapshot.entries,
     myRank: snapshot.myRank,
-    myCollectionCount: snapshot.myCollectionCount,
+    myPoints: snapshot.myPoints,
     totalPlayers: snapshot.totalPlayers,
     loading: !ready || loading,
     error,

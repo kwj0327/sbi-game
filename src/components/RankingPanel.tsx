@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
-import { ALL_DOLL_COUNT } from '../game/dollConfig'
 import { DISPLAY_NAME_MAX } from '../game/firestoreUsers'
-import { useDollCollection } from '../hooks/useDollCollection'
+import { PointAmount } from './PointAmount'
 import { useLeaderboard } from '../hooks/useLeaderboard'
 import { useUserProfile } from '../hooks/useUserProfile'
 import './RankingPanel.css'
 
 export function RankingPanel() {
   const { user, ready, error: authError } = useFirebaseUser()
-  const { summary } = useDollCollection(ALL_DOLL_COUNT)
-  const { entries, myRank, totalPlayers, loading, error } = useLeaderboard()
+  const { entries, myRank, myPoints, totalPlayers, loading, error } = useLeaderboard()
   const {
     profile,
     loading: profileLoading,
@@ -41,8 +39,15 @@ export function RankingPanel() {
       : `${totalPlayers.toLocaleString()}명 중 ${myRank.toLocaleString()}위`
 
   return (
-    <section className="ranking-panel" aria-label="수집 랭킹">
+    <section className="ranking-panel" aria-labelledby="ranking-title">
       <div className="ranking-panel__fixed">
+        <header className="ranking-panel__header">
+          <h2 id="ranking-title" className="ranking-panel__title">
+            포인트 랭킹
+          </h2>
+          <p className="ranking-panel__subtitle">포인트 기준 상위 플레이어</p>
+        </header>
+
         {!ready ? (
           <p className="ranking-panel__message">로그인 준비 중…</p>
         ) : null}
@@ -61,12 +66,12 @@ export function RankingPanel() {
             <div className="ranking-panel__mine">
               <p className="ranking-panel__mine-label">내 순위</p>
               <p className="ranking-panel__mine-value">{rankLabel}</p>
-              <p className="ranking-panel__mine-score">{summary.uniqueCount}종 수집</p>
+              <PointAmount value={myPoints} size="md" className="ranking-panel__mine-score" />
             </div>
 
             <div className="ranking-panel__name-edit">
               <label className="ranking-panel__name-label" htmlFor="ranking-display-name">
-                랭킹 이름
+                랭킹 이름 수정
               </label>
               <div className="ranking-panel__name-row">
                 <input
@@ -110,7 +115,6 @@ export function RankingPanel() {
             {entries.map((entry, index) => {
               const rank = index + 1
               const isMe = entry.uid === user?.uid
-              const score = isMe ? summary.uniqueCount : entry.collectionCount
 
               return (
                 <li
@@ -119,7 +123,7 @@ export function RankingPanel() {
                 >
                   <span className="ranking-list__rank">{rank}</span>
                   <span className="ranking-list__name">{entry.displayName}</span>
-                  <span className="ranking-list__score">{score}종</span>
+                  <PointAmount value={entry.points} size="sm" className="ranking-list__score" />
                 </li>
               )
             })}

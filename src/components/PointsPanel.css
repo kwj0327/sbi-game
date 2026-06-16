@@ -1,0 +1,98 @@
+.points-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 16px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+}
+
+.points-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.points-panel__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.points-panel__subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.points-panel__balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid rgb(0 0 0 / 6%);
+}
+
+.points-panel__balance-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.points-panel__balance-value {
+  flex-shrink: 0;
+}
+
+.points-panel__balance-value.point-amount .point-amount__value {
+  font-size: 20px;
+  color: var(--color-accent);
+}
+
+.points-panel__balance-value.point-amount .point-coin-icon--sm {
+  width: 18px;
+  height: 18px;
+}
+
+.points-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.points-panel__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 14px 16px;
+  border-radius: 14px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid rgb(0 0 0 / 6%);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 4%);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.points-panel__action:active {
+  transform: scale(0.99);
+  background: var(--color-surface-elevated);
+}
+
+.points-panel__action-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.points-panel__action-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,48 @@
+.point-amount {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.point-amount--sm {
+  gap: 4px;
+}
+
+.point-amount--md {
+  gap: 6px;
+}
+
+.point-amount--lg {
+  gap: 10px;
+}
+
+.point-amount__value {
+  font-weight: 700;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.point-amount--sm .point-amount__value {
+  font-size: 14px;
+}
+
+.point-amount--md .point-amount__value {
+  font-size: 16px;
+}
+
+.point-amount--lg .point-amount__value {
+  font-size: 32px;
+}
+
+.stat-card .point-amount {
+  justify-content: center;
+}
+
+.stat-card .point-amount__value {
+  font-size: 22px;
+}
+
+.ranking-panel__mine-score.point-amount .point-amount__value {
+  font-size: 18px;
+  color: var(--color-accent);
+}

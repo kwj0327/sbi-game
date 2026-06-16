@@ -1,4 +1,4 @@
-export type BottomNavTab = 'home' | 'ranking' | 'attendance'
+export type BottomNavTab = 'home' | 'ranking' | 'attendance' | 'points'
 
 type BottomNavProps = {
   activeTab: BottomNavTab
@@ -37,6 +37,16 @@ export function BottomNav({ activeTab, onSelectTab }: BottomNavProps) {
           📅
         </span>
         <span className="bottom-nav__label">출석</span>
+      </button>
+      <button
+        type="button"
+        className={`bottom-nav__item${activeTab === 'points' ? ' bottom-nav__item--active' : ''}`}
+        onClick={() => onSelectTab('points')}
+      >
+        <span className="bottom-nav__icon" aria-hidden="true">
+          💰
+        </span>
+        <span className="bottom-nav__label">포인트</span>
       </button>
     </nav>
   )

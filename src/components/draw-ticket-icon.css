@@ -1,0 +1,14 @@
+.draw-ticket-icon {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  object-fit: contain;
+}
+
+.draw-ticket-icon--lg {
+  height: 48px;
+}
+
+.draw-ticket-icon--sm {
+  height: 22px;
+}

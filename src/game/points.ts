@@ -1,5 +1,8 @@
-/** 포인트 — Firestore 우선, 오프라인/미연동 시 localStorage fallback */
-import { addUserPoints } from './firestoreUsers'
+/** 포인트 — localStorage가 기준, Firestore는 usePointsSync로 실시간 동기화 */
+/** 인형 1개당 교환 포인트 */
+export const DOLL_EXCHANGE_POINT_VALUE = 10
+
+export const DOLL_COLLECT_POINT_REWARD = 10
 
 const STORAGE_KEY = 'sbi-game-points'
 export const POINTS_CHANGE_EVENT = 'sbi-game-points-change'
@@ -32,18 +35,22 @@ export function getPointBalance(): number {
   return readLocalPointBalance()
 }
 
-export async function addPoints(amount: number, uid?: string | null): Promise<number> {
+export function addPoints(amount: number): number {
   if (amount <= 0) return readLocalPointBalance()
 
-  if (uid) {
-    const remoteTotal = await addUserPoints(uid, amount)
-    if (remoteTotal !== null) {
-      writeLocalPointBalance(remoteTotal)
-      return remoteTotal
-    }
-  }
-
   const next = readLocalPointBalance() + amount
+  writeLocalPointBalance(next)
+  return next
+}
+
+/** @returns 차감 후 잔액, 부족하면 null */
+export function spendPoints(amount: number): number | null {
+  if (amount <= 0) return readLocalPointBalance()
+
+  const current = readLocalPointBalance()
+  if (current < amount) return null
+
+  const next = current - amount
   writeLocalPointBalance(next)
   return next
 }

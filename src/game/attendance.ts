@@ -1,6 +1,17 @@
 export type AttendanceState = {
-  /** YYYY-MM-DD */
-  dates: string[]
+  version: 2
+  /** 이번 주(월~일) 식별 — 월요일 YYYY-MM-DD */
+  weekKey: string
+  /** 이번 주 연속 출석 일수 (0~7, 7일 달성 후 0으로 리셋) */
+  cycleProgress: number
+  lastCheckInKey: string | null
+  totalCheckIns: number
+}
+
+export type AttendanceWeekDay = {
+  day: number
+  label: string
+  checked: boolean
 }
 
 export type AttendanceSummary = {
@@ -8,31 +19,35 @@ export type AttendanceSummary = {
   streak: number
   checkedInToday: boolean
   todayKey: string
-  recentDays: readonly { key: string; label: string; checked: boolean }[]
+  weekKey: string
+  weekDays: readonly AttendanceWeekDay[]
+}
+
+export type CheckInResult = {
+  summary: AttendanceSummary
+  ticketsEarned: number
+  weeklyBonusGranted: boolean
+  alreadyCheckedIn: boolean
 }
 
 const STORAGE_KEY = 'sbi-game-attendance'
 export const ATTENDANCE_CHANGE_EVENT = 'sbi-game-attendance-change'
 
-function readState(): AttendanceState {
-  if (typeof window === 'undefined') return { dates: [] }
+export const ATTENDANCE_WEEKLY_BONUS_TICKETS = 50
+export const ATTENDANCE_WEEK_LENGTH = 7
+
+/** 테스트용 — false로 바꾸면 하루 1회 출석만 가능 */
+export const ATTENDANCE_REPEAT_CHECKIN_ENABLED = true
+
+function readRawState(): unknown {
+  if (typeof window === 'undefined') return null
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { dates: [] }
-
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as AttendanceState).dates)) {
-      return { dates: [] }
-    }
-
-    const dates = (parsed as AttendanceState).dates.filter(
-      (value): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
-    )
-
-    return { dates: [...new Set(dates)].sort() }
+    if (!raw) return null
+    return JSON.parse(raw) as unknown
   } catch {
-    return { dates: [] }
+    return null
   }
 }
 
@@ -55,59 +70,182 @@ function shiftDateKey(key: string, deltaDays: number) {
   return getTodayKey(date)
 }
 
-function formatRecentLabel(key: string, todayKey: string) {
-  if (key === todayKey) return '오늘'
-  const yesterday = shiftDateKey(todayKey, -1)
-  if (key === yesterday) return '어제'
-
-  const [, month, day] = key.split('-')
-  return `${Number(month)}/${Number(day)}`
+/** 이번 주 월요일 날짜 키 (주간 갱신 기준) */
+export function getWeekKey(date = new Date()) {
+  const cursor = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const weekday = cursor.getDay()
+  const mondayOffset = weekday === 0 ? -6 : 1 - weekday
+  cursor.setDate(cursor.getDate() + mondayOffset)
+  return getTodayKey(cursor)
 }
 
-function computeStreak(dates: readonly string[], todayKey: string) {
-  const set = new Set(dates)
-  if (!set.has(todayKey) && !set.has(shiftDateKey(todayKey, -1))) return 0
+function createEmptyState(today = new Date()): AttendanceState {
+  return {
+    version: 2,
+    weekKey: getWeekKey(today),
+    cycleProgress: 0,
+    lastCheckInKey: null,
+    totalCheckIns: 0,
+  }
+}
 
-  let streak = 0
-  let cursor = set.has(todayKey) ? todayKey : shiftDateKey(todayKey, -1)
+function migrateLegacyState(raw: unknown, today = new Date()): AttendanceState {
+  const todayKey = getTodayKey(today)
+  const weekKey = getWeekKey(today)
 
-  while (set.has(cursor)) {
-    streak += 1
-    cursor = shiftDateKey(cursor, -1)
+  if (!raw || typeof raw !== 'object') return createEmptyState(today)
+
+  if ((raw as AttendanceState).version === 2) {
+    const state = raw as AttendanceState
+    return {
+      version: 2,
+      weekKey: typeof state.weekKey === 'string' ? state.weekKey : weekKey,
+      cycleProgress:
+        typeof state.cycleProgress === 'number' && state.cycleProgress >= 0
+          ? Math.min(state.cycleProgress, ATTENDANCE_WEEK_LENGTH)
+          : 0,
+      lastCheckInKey:
+        typeof state.lastCheckInKey === 'string' ? state.lastCheckInKey : null,
+      totalCheckIns:
+        typeof state.totalCheckIns === 'number' && state.totalCheckIns >= 0
+          ? state.totalCheckIns
+          : 0,
+    }
   }
 
-  return streak
+  const legacyDates = Array.isArray((raw as { dates?: unknown }).dates)
+    ? (raw as { dates: unknown[] }).dates.filter(
+        (value): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value),
+      )
+    : []
+
+  let cycleProgress = 0
+  let lastCheckInKey: string | null = null
+
+  if (legacyDates.length > 0) {
+    const sorted = [...new Set(legacyDates)].sort()
+    lastCheckInKey = sorted[sorted.length - 1] ?? null
+
+    if (lastCheckInKey) {
+      let cursor = lastCheckInKey
+      const set = new Set(sorted)
+      while (set.has(cursor)) {
+        cycleProgress += 1
+        cursor = shiftDateKey(cursor, -1)
+      }
+      cycleProgress = Math.min(cycleProgress, ATTENDANCE_WEEK_LENGTH)
+      if (lastCheckInKey !== todayKey && lastCheckInKey !== shiftDateKey(todayKey, -1)) {
+        cycleProgress = 0
+      }
+    }
+  }
+
+  return {
+    version: 2,
+    weekKey,
+    cycleProgress,
+    lastCheckInKey,
+    totalCheckIns: legacyDates.length,
+  }
+}
+
+function normalizeState(state: AttendanceState, today = new Date()): AttendanceState {
+  const weekKey = getWeekKey(today)
+
+  if (state.weekKey === weekKey) {
+    return state
+  }
+
+  return {
+    ...state,
+    weekKey,
+    cycleProgress: 0,
+    lastCheckInKey: null,
+  }
+}
+
+function readState(today = new Date()): AttendanceState {
+  return normalizeState(migrateLegacyState(readRawState(), today), today)
+}
+
+function getEffectiveProgress(state: AttendanceState, todayKey: string) {
+  if (!state.lastCheckInKey) return 0
+  if (state.lastCheckInKey === todayKey) return state.cycleProgress
+  if (state.lastCheckInKey === shiftDateKey(todayKey, -1)) return state.cycleProgress
+  return 0
+}
+
+function buildWeekDays(progress: number): AttendanceWeekDay[] {
+  return Array.from({ length: ATTENDANCE_WEEK_LENGTH }, (_, index) => {
+    const day = index + 1
+    return {
+      day,
+      label: `${day}일`,
+      checked: day <= progress,
+    }
+  })
 }
 
 export function getAttendanceSummary(today = new Date()): AttendanceSummary {
   const todayKey = getTodayKey(today)
-  const { dates } = readState()
-  const set = new Set(dates)
-
-  const recentDays = Array.from({ length: 7 }, (_, index) => {
-    const offset = 6 - index
-    const key = shiftDateKey(todayKey, offset - 6)
-    return {
-      key,
-      label: formatRecentLabel(key, todayKey),
-      checked: set.has(key),
-    }
-  })
+  const state = readState(today)
+  const checkedInToday = state.lastCheckInKey === todayKey
+  const streak = getEffectiveProgress(state, todayKey)
 
   return {
-    totalDays: dates.length,
-    streak: computeStreak(dates, todayKey),
-    checkedInToday: set.has(todayKey),
+    totalDays: state.totalCheckIns,
+    streak,
+    checkedInToday,
     todayKey,
-    recentDays,
+    weekKey: state.weekKey,
+    weekDays: buildWeekDays(streak),
   }
 }
 
-export function checkInToday(): AttendanceSummary {
-  const summary = getAttendanceSummary()
-  if (summary.checkedInToday) return summary
+export function checkInToday(today = new Date()): CheckInResult {
+  const todayKey = getTodayKey(today)
+  const state = readState(today)
+  const summaryBefore = getAttendanceSummary(today)
 
-  const state = readState()
-  writeState({ dates: [...state.dates, summary.todayKey].sort() })
-  return getAttendanceSummary()
+  if (summaryBefore.checkedInToday) {
+    return {
+      summary: summaryBefore,
+      ticketsEarned: 0,
+      weeklyBonusGranted: false,
+      alreadyCheckedIn: true,
+    }
+  }
+
+  let cycleProgress = 1
+  if (
+    state.lastCheckInKey &&
+    state.lastCheckInKey === shiftDateKey(todayKey, -1) &&
+    state.cycleProgress > 0
+  ) {
+    cycleProgress = Math.min(state.cycleProgress + 1, ATTENDANCE_WEEK_LENGTH)
+  }
+
+  const weeklyBonusGranted = cycleProgress >= ATTENDANCE_WEEK_LENGTH
+  const nextCycleProgress = weeklyBonusGranted ? 0 : cycleProgress
+
+  writeState({
+    version: 2,
+    weekKey: getWeekKey(today),
+    cycleProgress: nextCycleProgress,
+    lastCheckInKey: todayKey,
+    totalCheckIns: state.totalCheckIns + 1,
+  })
+
+  const summary = getAttendanceSummary(today)
+
+  return {
+    summary,
+    ticketsEarned: 0,
+    weeklyBonusGranted,
+    alreadyCheckedIn: false,
+  }
+}
+
+export function getCheckInTicketReward(weeklyBonusGranted: boolean, dailyReward: number) {
+  return dailyReward + (weeklyBonusGranted ? ATTENDANCE_WEEKLY_BONUS_TICKETS : 0)
 }
