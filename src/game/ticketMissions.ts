@@ -10,7 +10,7 @@ export const TICKET_MISSION_LINK_URL = 'https://www.sbisb.co.kr/mai0020100.act'
 export const TICKET_MISSIONS: readonly TicketMission[] = [
   {
     id: 'group-account',
-    title: '모임통장 가입',
+    title: '커플통장 가입',
     rewardTickets: 10,
   },
   {
@@ -27,5 +27,10 @@ export const TICKET_MISSIONS: readonly TicketMission[] = [
     id: 'deposit-account',
     title: '신규 예금 가입',
     rewardTickets: 30,
+  },
+  {
+    id: 'open-banking',
+    title: '오픈뱅킹 등록',
+    rewardTickets: 10,
   },
 ] as const
