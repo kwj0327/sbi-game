@@ -7,7 +7,7 @@ import {
   ATTENDANCE_WEEKLY_BONUS_TICKETS,
   ATTENDANCE_WEEK_LENGTH,
 } from '../game/attendance'
-import { TICKET_MISSIONS } from '../game/ticketMissions'
+import { TICKET_MISSION_LINK_URL, TICKET_MISSIONS } from '../game/ticketMissions'
 import { useAttendance } from '../hooks/useAttendance'
 import { useClawCoins } from '../hooks/useClawCoins'
 import './AttendancePanel.css'
@@ -15,6 +15,10 @@ import './AttendancePanel.css'
 export function AttendancePanel() {
   const { summary, checkIn, lastRewardTickets, clearLastReward } = useAttendance()
   const { coins: tickets } = useClawCoins()
+
+  const openMissionLink = () => {
+    window.open(TICKET_MISSION_LINK_URL, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <>
@@ -94,7 +98,11 @@ export function AttendancePanel() {
           <ul className="attendance-mission-list">
             {TICKET_MISSIONS.map((mission) => (
               <li key={mission.id}>
-                <button type="button" className="attendance-mission-list__item">
+                <button
+                  type="button"
+                  className="attendance-mission-list__item"
+                  onClick={openMissionLink}
+                >
                   <span className="attendance-mission-list__body">
                     <span className="attendance-mission-list__title">{mission.title}</span>
                   </span>

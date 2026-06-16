@@ -4,6 +4,9 @@ export type TicketMission = {
   rewardTickets: number
 }
 
+/** 티켓 모으기 미션 버튼 클릭 시 이동 URL */
+export const TICKET_MISSION_LINK_URL = 'https://www.sbisb.co.kr/mai0020100.act'
+
 export const TICKET_MISSIONS: readonly TicketMission[] = [
   {
     id: 'group-account',
