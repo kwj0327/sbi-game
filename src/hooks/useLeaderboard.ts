@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
+import { ALL_DOLL_COUNT } from '../game/dollConfig'
+import { getCollectionSummary } from '../game/dollCollection'
+import { bootstrapUserCollection } from '../game/firestoreUsers'
 import {
   subscribeCollectionLeaderboard,
   type LeaderboardSnapshot,
@@ -27,28 +30,48 @@ export function useLeaderboard() {
       return
     }
 
+    let cancelled = false
+    let unsubscribe: (() => void) | null = null
+
     setLoading(true)
     setError(null)
 
-    const unsubscribe =
-      subscribeCollectionLeaderboard(
-        user.uid,
-        (next) => {
-          setSnapshot(next)
-          setLoading(false)
-        },
-        (fetchError) => {
-          setError(fetchError.message)
-          setLoading(false)
-        },
-      ) ?? null
+    const localUniqueCount = getCollectionSummary(ALL_DOLL_COUNT).uniqueCount
 
-    if (!unsubscribe) {
-      setLoading(false)
-      setError('Firebase가 설정되지 않았습니다.')
-    }
+    bootstrapUserCollection(user.uid, localUniqueCount)
+      .then(() => {
+        if (cancelled) return
+
+        unsubscribe =
+          subscribeCollectionLeaderboard(
+            user.uid,
+            (next) => {
+              if (cancelled) return
+              setSnapshot(next)
+              setLoading(false)
+            },
+            (fetchError) => {
+              if (cancelled) return
+              setError(fetchError.message)
+              setLoading(false)
+            },
+          ) ?? null
+
+        if (!unsubscribe) {
+          setLoading(false)
+          setError('Firebase가 설정되지 않았습니다.')
+        }
+      })
+      .catch((syncError: unknown) => {
+        if (cancelled) return
+        const message =
+          syncError instanceof Error ? syncError.message : '랭킹 동기화에 실패했습니다.'
+        setError(message)
+        setLoading(false)
+      })
 
     return () => {
+      cancelled = true
       unsubscribe?.()
     }
   }, [ready, user, authError])

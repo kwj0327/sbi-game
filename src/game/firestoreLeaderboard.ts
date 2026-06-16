@@ -43,57 +43,71 @@ export function subscribeCollectionLeaderboard(
     limit(20),
   )
 
+  let snapshotGeneration = 0
+
   return onSnapshot(
     topQuery,
-    async (snapshot) => {
-      const entries: LeaderboardEntry[] = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data()
-        return {
-          uid: docSnap.id,
-          collectionCount:
-            typeof data.collectionCount === 'number' ? data.collectionCount : 0,
-          displayName: formatPlayerName(docSnap.id, data.displayName),
-        }
-      })
+    (snapshot) => {
+      const generation = ++snapshotGeneration
 
-      let myRank: number | null = null
-      let myCollectionCount = 0
-
-      if (uid) {
-        const mine = entries.find((entry) => entry.uid === uid)
-
-        if (mine) {
-          myCollectionCount = mine.collectionCount
-          myRank = entries.findIndex((entry) => entry.uid === uid) + 1
-        } else {
-          const userRef = getUserDocRef(uid)
-          if (userRef) {
-            const userSnap = await getDoc(userRef)
-            myCollectionCount =
-              typeof userSnap.data()?.collectionCount === 'number'
-                ? userSnap.data()!.collectionCount
-                : 0
+      void (async () => {
+        const entries: LeaderboardEntry[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data()
+          return {
+            uid: docSnap.id,
+            collectionCount:
+              typeof data.collectionCount === 'number' ? data.collectionCount : 0,
+            displayName: formatPlayerName(docSnap.id, data.displayName),
           }
+        })
 
-          if (myCollectionCount > 0) {
-            const rankQuery = query(
-              collection(db, 'users'),
-              where('collectionCount', '>', myCollectionCount),
-            )
-            const rankSnap = await getCountFromServer(rankQuery)
-            myRank = rankSnap.data().count + 1
+        let myRank: number | null = null
+        let myCollectionCount = 0
+
+        if (uid) {
+          const mine = entries.find((entry) => entry.uid === uid)
+
+          if (mine) {
+            myCollectionCount = mine.collectionCount
+            myRank = entries.findIndex((entry) => entry.uid === uid) + 1
           } else {
-            const rankQuery = query(
-              collection(db, 'users'),
-              where('collectionCount', '>', 0),
-            )
-            const rankSnap = await getCountFromServer(rankQuery)
-            myRank = rankSnap.data().count + 1
+            const userRef = getUserDocRef(uid)
+            if (userRef) {
+              const userSnap = await getDoc(userRef)
+              if (generation !== snapshotGeneration) return
+
+              myCollectionCount =
+                typeof userSnap.data()?.collectionCount === 'number'
+                  ? userSnap.data()!.collectionCount
+                  : 0
+            }
+
+            if (myCollectionCount > 0) {
+              const rankQuery = query(
+                collection(db, 'users'),
+                where('collectionCount', '>', myCollectionCount),
+              )
+              const rankSnap = await getCountFromServer(rankQuery)
+              if (generation !== snapshotGeneration) return
+              myRank = rankSnap.data().count + 1
+            } else {
+              const rankQuery = query(
+                collection(db, 'users'),
+                where('collectionCount', '>', 0),
+              )
+              const rankSnap = await getCountFromServer(rankQuery)
+              if (generation !== snapshotGeneration) return
+              myRank = rankSnap.data().count + 1
+            }
           }
         }
-      }
 
-      onChange({ entries, myRank, myCollectionCount })
+        if (generation !== snapshotGeneration) return
+        onChange({ entries, myRank, myCollectionCount })
+      })().catch((error: unknown) => {
+        if (generation !== snapshotGeneration) return
+        onError?.(error instanceof Error ? error : new Error('랭킹을 불러오지 못했습니다.'))
+      })
     },
     (error) => {
       onError?.(error)

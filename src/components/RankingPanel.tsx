@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
+import { ALL_DOLL_COUNT } from '../game/dollConfig'
 import { DISPLAY_NAME_MAX } from '../game/firestoreUsers'
+import { useDollCollection } from '../hooks/useDollCollection'
 import { useLeaderboard } from '../hooks/useLeaderboard'
 import { useUserProfile } from '../hooks/useUserProfile'
 import './RankingPanel.css'
 
 export function RankingPanel() {
   const { user, ready, error: authError } = useFirebaseUser()
-  const { entries, myRank, myCollectionCount, loading, error } = useLeaderboard()
+  const { summary } = useDollCollection(ALL_DOLL_COUNT)
+  const { entries, myRank, loading, error } = useLeaderboard()
   const {
     profile,
     loading: profileLoading,
@@ -93,7 +96,7 @@ export function RankingPanel() {
               {loading ? '…' : myRank ? `${myRank}위` : '-'}
             </span>
             <span className="ranking-panel__mine-score">
-              {loading ? '…' : `${myCollectionCount}종`}
+              {loading ? '…' : `${summary.uniqueCount}종`}
             </span>
           </div>
         </>
@@ -110,6 +113,7 @@ export function RankingPanel() {
           {entries.map((entry, index) => {
             const rank = index + 1
             const isMe = entry.uid === user?.uid
+            const score = isMe ? summary.uniqueCount : entry.collectionCount
 
             return (
               <li
@@ -118,7 +122,7 @@ export function RankingPanel() {
               >
                 <span className="ranking-list__rank">{rank}</span>
                 <span className="ranking-list__name">{entry.displayName}</span>
-                <span className="ranking-list__score">{entry.collectionCount}종</span>
+                <span className="ranking-list__score">{score}종</span>
               </li>
             )
           })}

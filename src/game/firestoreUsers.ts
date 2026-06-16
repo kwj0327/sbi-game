@@ -100,16 +100,7 @@ export function subscribeUserProfile(
 }
 
 export async function syncUserCollectionCount(uid: string, count: number): Promise<void> {
-  if (count < 0) return
-
-  const ref = getUserDocRef(uid)
-  if (!ref) return
-
-  await ensureUserDocument(uid)
-  await updateDoc(ref, {
-    collectionCount: count,
-    updatedAt: serverTimestamp(),
-  })
+  await bootstrapUserCollection(uid, count)
 }
 
 export async function addUserPoints(uid: string, amount: number): Promise<number | null> {
