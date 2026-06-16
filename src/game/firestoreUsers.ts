@@ -25,7 +25,10 @@ export function getUserDocRef(uid: string) {
   return doc(db, 'users', uid)
 }
 
-export async function ensureUserDocument(uid: string): Promise<void> {
+export async function ensureUserDocument(
+  uid: string,
+  initialCollectionCount = 0,
+): Promise<void> {
   const ref = getUserDocRef(uid)
   if (!ref) return
 
@@ -34,8 +37,37 @@ export async function ensureUserDocument(uid: string): Promise<void> {
 
   await setDoc(ref, {
     points: 0,
-    collectionCount: 0,
+    collectionCount: initialCollectionCount,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/** 앱 실행·로그인 시 로컬 수집 종류 수를 Firestore 랭킹 값으로 맞춤 */
+export async function bootstrapUserCollection(uid: string, localUniqueCount: number): Promise<void> {
+  if (localUniqueCount < 0) return
+
+  const ref = getUserDocRef(uid)
+  if (!ref) return
+
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) {
+    await setDoc(ref, {
+      points: 0,
+      collectionCount: localUniqueCount,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    return
+  }
+
+  const remoteCount =
+    typeof snapshot.data()?.collectionCount === 'number' ? snapshot.data()!.collectionCount : 0
+
+  if (remoteCount === localUniqueCount) return
+
+  await updateDoc(ref, {
+    collectionCount: localUniqueCount,
     updatedAt: serverTimestamp(),
   })
 }

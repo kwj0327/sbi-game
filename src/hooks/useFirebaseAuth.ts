@@ -1,6 +1,8 @@
 import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
 import { useEffect, useState } from 'react'
-import { ensureUserDocument } from '../game/firestoreUsers'
+import { ALL_DOLL_COUNT } from '../game/dollConfig'
+import { getCollectionSummary } from '../game/dollCollection'
+import { bootstrapUserCollection } from '../game/firestoreUsers'
 import { getFirebaseAuth, isFirebaseConfigured } from '../lib/firebase'
 
 type FirebaseAuthState = {
@@ -31,7 +33,8 @@ export function useFirebaseAuth(): FirebaseAuthState {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        ensureUserDocument(user.uid).finally(() => {
+        const localUniqueCount = getCollectionSummary(ALL_DOLL_COUNT).uniqueCount
+        bootstrapUserCollection(user.uid, localUniqueCount).finally(() => {
           setState({ ready: true, user, error: null })
         })
         return

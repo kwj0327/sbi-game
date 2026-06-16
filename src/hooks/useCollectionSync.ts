@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFirebaseUser } from '../context/FirebaseContext'
 import { syncUserCollectionCount } from '../game/firestoreUsers'
 import { useDollCollection } from './useDollCollection'
@@ -6,12 +6,15 @@ import { useDollCollection } from './useDollCollection'
 export function useCollectionSync(dollCount: number) {
   const { user, ready } = useFirebaseUser()
   const { summary } = useDollCollection(dollCount)
+  const lastSyncedCount = useRef<number | null>(null)
 
   useEffect(() => {
     if (!ready || !user) return
+    if (lastSyncedCount.current === summary.uniqueCount) return
 
+    lastSyncedCount.current = summary.uniqueCount
     syncUserCollectionCount(user.uid, summary.uniqueCount).catch(() => {
-      // 랭킹 동기화 실패는 게임 플레이를 막지 않음
+      lastSyncedCount.current = null
     })
   }, [ready, user, summary.uniqueCount])
 }
