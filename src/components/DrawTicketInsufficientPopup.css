@@ -17,6 +17,10 @@
   animation: draw-ticket-insufficient-fade-in 0.22s ease;
 }
 
+.draw-ticket-insufficient-popup__backdrop--locked {
+  pointer-events: none;
+}
+
 .draw-ticket-insufficient-popup__card {
   position: relative;
   z-index: 1;

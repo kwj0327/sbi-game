@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DRAW_TICKET_PLAY_COST } from '../game/clawCoins'
 import { DrawTicketIcon } from './DrawTicketIcon'
 import { bindReliableTap } from './bindReliableTap'
 import './DrawTicketInsufficientPopup.css'
+
+const DISMISS_GUARD_MS = 450
 
 type DrawTicketInsufficientPopupProps = {
   onClose: () => void
@@ -13,13 +16,34 @@ export function DrawTicketInsufficientPopup({
   onClose,
   onGoToAttendance,
 }: DrawTicketInsufficientPopupProps) {
+  const openedAtRef = useRef(performance.now())
+  const [canDismiss, setCanDismiss] = useState(false)
+
+  useEffect(() => {
+    openedAtRef.current = performance.now()
+    setCanDismiss(false)
+
+    const timer = window.setTimeout(() => setCanDismiss(true), DISMISS_GUARD_MS)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const guardedClose = () => {
+    if (!canDismiss || performance.now() - openedAtRef.current < DISMISS_GUARD_MS) return
+    onClose()
+  }
+
   return createPortal(
     <div className="draw-ticket-insufficient-popup" role="presentation">
       <button
         type="button"
-        className="draw-ticket-insufficient-popup__backdrop"
+        className={`draw-ticket-insufficient-popup__backdrop${
+          canDismiss ? '' : ' draw-ticket-insufficient-popup__backdrop--locked'
+        }`}
         aria-label="팝업 닫기"
-        {...bindReliableTap(onClose)}
+        onClick={(event) => {
+          event.preventDefault()
+          guardedClose()
+        }}
       />
       <div
         className="draw-ticket-insufficient-popup__card"
@@ -51,7 +75,7 @@ export function DrawTicketInsufficientPopup({
         <button
           type="button"
           className="draw-ticket-insufficient-popup__secondary"
-          {...bindReliableTap(onClose)}
+          {...bindReliableTap(guardedClose)}
         >
           닫기
         </button>
