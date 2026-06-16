@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import './PointsUseModal.css'
 
 type PointsUseModalProps = {
@@ -5,7 +6,7 @@ type PointsUseModalProps = {
 }
 
 export function PointsUseModal({ onClose }: PointsUseModalProps) {
-  return (
+  return createPortal(
     <div className="points-use-modal" role="presentation">
       <button
         type="button"
@@ -29,6 +30,7 @@ export function PointsUseModal({ onClose }: PointsUseModalProps) {
         </header>
         <p className="points-use-modal__empty">사용 가능한 항목이 없어요.</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

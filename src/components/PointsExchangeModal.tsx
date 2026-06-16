@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES } from '../game/dollConfig'
 import { exchangeCollectedDolls } from '../game/dollCollection'
 import { DOLL_EXCHANGE_POINT_VALUE } from '../game/points'
@@ -62,7 +63,7 @@ export function PointsExchangeModal({ onClose }: PointsExchangeModalProps) {
     setQuantity(1)
   }
 
-  return (
+  return createPortal(
     <div className="points-exchange-modal" role="presentation">
       <button
         type="button"
@@ -163,6 +164,7 @@ export function PointsExchangeModal({ onClose }: PointsExchangeModalProps) {
 
         {message ? <p className="points-exchange-modal__message">{message}</p> : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
