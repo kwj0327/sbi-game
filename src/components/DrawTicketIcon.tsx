@@ -8,11 +8,12 @@ type DrawTicketIconProps = {
 
 export function DrawTicketIcon({ size = 'lg', className }: DrawTicketIconProps) {
   return (
-    <span
-      className={`draw-ticket-icon-wrap draw-ticket-icon-wrap--${size}${className ? ` ${className}` : ''}`}
+    <img
+      src={ticketImage}
+      alt=""
+      className={`draw-ticket-icon draw-ticket-icon--${size}${className ? ` ${className}` : ''}`}
+      draggable={false}
       aria-hidden="true"
-    >
-      <img src={ticketImage} alt="" className="draw-ticket-icon" draggable={false} />
-    </span>
+    />
   )
 }

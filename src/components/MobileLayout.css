@@ -77,7 +77,8 @@
 }
 
 .mobile-header__exit:not(.mobile-header__exit-spacer) {
-  margin-left: 6px;
+  margin-top: 4px;
+  margin-left: 12px;
 }
 
 .mobile-header__exit-icon {
