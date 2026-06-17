@@ -18,10 +18,13 @@
 
 .g2-claw__cable {
   position: absolute;
-  top: var(--g2-claw-rail-y);
+  top: calc(var(--g2-claw-rail-y) + var(--g2-cable-visual-trim, 0%));
   left: var(--g2-claw-x);
   width: calc(3px * var(--g2-stage-scale, 1));
-  height: var(--g2-claw-cable-length);
+  height: max(
+    1.5%,
+    calc(var(--g2-claw-cable-length) - var(--g2-cable-visual-trim, 0%))
+  );
   border-radius: 999px;
   background: linear-gradient(
     90deg,

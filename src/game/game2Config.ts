@@ -4,10 +4,16 @@ export const GAME2_STAGE = {
   viewHeight: 1024,
 } as const
 
+/** 배경 PNG 레일 위치 — 케이블이 보이기 시작하는 y (stage %) */
+const GAME2_CLAW_CABLE_ANCHOR_Y = 8.5
+
+const GAME2_CLAW_RAIL_Y = 3
+const GAME2_CLAW_LIFT = 40
+
 export const GAME2_CLAW = {
   defaultX: 50,
-  /** 케이블 고정점 (stage %) — 확정 디폴트 */
-  railY: 8.5,
+  /** 케이블 고정점 (stage %) — 작을수록 화면 위 */
+  railY: GAME2_CLAW_RAIL_Y,
   /** 집게 본체(몸통+발) 너비 — stage 대비 % (앞쪽·scale 1 기준) */
   rigWidth: 32,
   /** depth 0(뒤) ↔ 1(앞) 원근 스케일 */
@@ -18,8 +24,13 @@ export const GAME2_CLAW = {
   moveStepY: 1.6,
   /** 방향키 길게 누를 때 반복 간격 (ms) */
   moveRepeatMs: 100,
-  /** 케이블 길이 보정 — 클수록 집게가 화면 위로 (stage %). 확정 디폴트 18 */
-  cableVisualLift: 18,
+  /** 케이블 길이 보정 — 클수록 집게가 화면 위로 (stage %). */
+  cableVisualLift: GAME2_CLAW_LIFT,
+  /**
+   * 집게를 올린 만큼 줄 아래쪽을 잘라 숨김 — 배경 레일(anchor)에서 집게까지만 표시.
+   * (anchor − railY)
+   */
+  cableVisualTrim: GAME2_CLAW_CABLE_ANCHOR_Y - GAME2_CLAW_RAIL_Y,
   /** 하강 애니메이션 길이 (ms) */
   descendDurationMs: 900,
   /** 바닥 착지 후 상승까지 대기 (ms) */
@@ -40,6 +51,12 @@ export const GAME2_CLAW = {
 export const GAME2_GRAB = {
   /** 집게 play 좌표 기준 잡기 반경 (stage %) — 알파 마스크 미로드 시 폴백 */
   maxRadius: 10,
+  /** 더미 꼭대기 탐지 — 발자국 x (뒤쪽일수록 정렬 오차↑ → 넓게) */
+  stackRadiusXBack: 16,
+  stackRadiusXFront: 11,
+  /** 더미 꼭대기 탐지 — 발자국 y */
+  stackRadiusYBack: 10,
+  stackRadiusYFront: 11,
   /** 착지점이 부위에서 이 거리 안에 있어야 함 (stage 디자인 px) */
   tipRadiusPx: 8,
   /** 잡힘으로 인정할 최소 알파 (0–255) */
@@ -177,6 +194,8 @@ export type Game2ClawState = {
   heldOffsetY: number
   /** 물림 품질 0–1 (1 = 정중앙) — 이동 중 낙하 확률에 사용 */
   heldGripQuality: number
+  /** 더미(쌓인 인형) 위에서 멈추도록 집게를 위로 들어올리는 양 (stage %). 0이면 바닥까지 */
+  clawLiftPercent: number
 }
 
 /**
@@ -188,7 +207,7 @@ export type Game2ClawState = {
  */
 
 /** 바닥 가이드 표시(영역 선·격자·번호) — 다시 켤 때까지 false */
-export const GAME2_SHOW_FLOOR_GUIDES = false
+export const GAME2_SHOW_FLOOR_GUIDES = true
 
 /** true면 인형 영역(격자·빨간 경계)만 — 집게·배출구 가이드 숨김 */
 export const GAME2_SHOW_DOLL_ZONE_GUIDE_ONLY = false
@@ -212,14 +231,16 @@ export const GAME2_FLOOR_CHUTE = GAME2_CHUTE_ZONE
  * 시각: `.g2-floor-guide__edge--doll-zone` · `getGame2DollZoneOutline()`
  */
 export const GAME2_DOLL_ZONE = {
+  // 🔴 인형 영역 = 🟢 집게 영역과 동일. 인형이 영역 밖으로 나오지 않도록
+  // 배치 시 인형 절반 크기만큼 안쪽으로 인셋(createDollPlacementFromPoint)한다.
   floor: {
-    backY: 66,
-    frontY: 86,
-    backLeftX: 24,
-    backRightX: 76,
-    frontLeftX: 18,
-    /** 12번 격자·앞쪽 빨간 테두리 오른쪽 끝 (작을수록 테두리·12번 칸이 왼쪽으로) */
-    frontRightX: 82,
+    backY: 65,
+    frontY: 93,
+    /** 뒤쪽(벽) — 이전 22~78에서 확장해 뒤열 배치·쌓기 여유 확보 */
+    backLeftX: 14,
+    backRightX: 86,
+    frontLeftX: 8,
+    frontRightX: 92,
   },
   chuteClearance: {
     top: 8,
@@ -230,15 +251,17 @@ export const GAME2_DOLL_ZONE = {
 } as const
 
 /**
- * 🟢 집게 이동 영역 — idle 이동·하강·좌표 클램프 (확정).
+ * 🟢 집게 이동 영역 — idle 이동·좌표 클램프.
+ * 🔴 인형 영역과 같은 사다리꼴(배출구 컷아웃 없음) — 앞·좌·우 끝까지 이동 가능.
+ * chuteCutout은 가이드/레거시용. 착지 마커는 별도 계산이며 이동을 제한하지 않음.
  * 시각: `.g2-floor-guide__edge--claw-zone` · `getGame2ClawZoneOutline()`
  */
 export const GAME2_CLAW_ZONE = {
   floor: {
     backY: 65,
     frontY: 93,
-    backLeftX: 22,
-    backRightX: 78,
+    backLeftX: 14,
+    backRightX: 86,
     frontLeftX: 8,
     frontRightX: 92,
   },
@@ -247,6 +270,8 @@ export const GAME2_CLAW_ZONE = {
     centerY: 89.5,
     width: 28,
     height: 9,
+    /** 배출구 위쪽 빨간 가로선 — 기본 85에서 뒤(벽쪽)로 이동 */
+    notchTopY: 81.5,
   },
 } as const
 
@@ -258,19 +283,8 @@ export const GAME2_DOLL_ZONE_ORIGINAL = GAME2_CLAW_ZONE
 /** @deprecated GAME2_DOLL_ZONE.floor */
 export const GAME2_FLOOR = GAME2_DOLL_ZONE.floor
 
-/** 인형 영역에서 제외하는 배출구 컷아웃 (빨간 경계 계산) */
-export const GAME2_DOLL_ZONE_CHUTE_CUTOUT = {
-  centerX: GAME2_CHUTE_ZONE.centerX,
-  centerY: GAME2_CHUTE_ZONE.centerY,
-  width:
-    GAME2_CHUTE_ZONE.width +
-    GAME2_DOLL_ZONE.chuteClearance.left +
-    GAME2_DOLL_ZONE.chuteClearance.right,
-  height:
-    GAME2_CHUTE_ZONE.height +
-    GAME2_DOLL_ZONE.chuteClearance.top +
-    GAME2_DOLL_ZONE.chuteClearance.bottom,
-} as const
+/** 인형 영역에서 제외하는 배출구 컷아웃 — 🟢 집게 영역과 동일 */
+export const GAME2_DOLL_ZONE_CHUTE_CUTOUT = GAME2_CLAW_ZONE_CHUTE_CUTOUT
 
 /** @deprecated GAME2_DOLL_ZONE.chuteClearance */
 export const GAME2_CHUTE_CLEARANCE = GAME2_DOLL_ZONE.chuteClearance
@@ -304,15 +318,29 @@ export const GAME2_PLAY_GRID = {
 
 /** 인형 영역 안 인형 수·표시 크기 */
 export const GAME2_DOLLS = {
-  count: 10,
-  emojiSizePx: 104,
+  count: 20,
+  emojiSizePx: 150,
+} as const
+
+/** 인형 쌓기(2~3층) 설정 */
+export const GAME2_STACK = {
+  /** 전체 중 위층(2층)에 올릴 비율 (0~1) */
+  topRatio: 0.5,
+  /** 받침 인형 몸통 높이 대비 위 인형이 얹히는 높이 (z = bodyHeight% × nest) */
+  nest: 0.82,
+  /** 2층 위에 3층을 더 올릴 비율 (2층 더미 중) */
+  extraTopRatio: 0.42,
+  /** 위 인형을 원근상 살짝 뒤로 (받침 뒤에 얹힌 느낌) */
+  backOffsetY: 1,
+  /** 위 인형 기울기 완화 계수 (바닥보다 덜 기울게) */
+  topRotateScale: 0.6,
 } as const
 
 /** 알고리즘 작업용 — true면 인형을 doll zone 중앙에 고정 스폰 */
 export const GAME2_DEV_CENTER_SPAWN = false
 
 /** 알고리즘 작업용 — 0이면 인형 없음 (영역 가이드 확인용) */
-export const GAME2_SPAWN_DOLL_COUNT = 10
+export const GAME2_SPAWN_DOLL_COUNT = 20
 
 export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   xPercent: GAME2_CLAW.defaultX,
@@ -325,4 +353,5 @@ export const DEFAULT_GAME2_CLAW: Game2ClawState = {
   heldOffsetX: 0,
   heldOffsetY: 0,
   heldGripQuality: 1,
+  clawLiftPercent: 0,
 }

@@ -100,7 +100,7 @@ export const Game2Viewport = forwardRef<Game2ViewportHandle, Game2ViewportProps>
             playfieldH={playfieldMetrics.height}
             stageScale={playfieldMetrics.scale}
           />
-          <Game2ClawFloorMarker claw={claw} />
+          <Game2ClawFloorMarker claw={claw} dolls={dolls} />
           <Game2Claw
             claw={claw}
             heldDoll={

@@ -1,20 +1,29 @@
 import type { Game2ClawState } from '../../game/game2Config'
 import {
   getClawFloorMarkerFromPlayPosition,
+  getClawLandingMarkerTipY,
   getDefaultGame2ClawState,
+  shouldShowClawFloorMarker,
+  type Game2DollState,
 } from '../../game/game2PlayArea'
 import './game2-claw-floor-marker.css'
 
 type Game2ClawFloorMarkerProps = {
-  claw?: Pick<Game2ClawState, 'xPercent' | 'playY'>
+  claw?: Game2ClawState
+  dolls?: readonly Game2DollState[]
 }
 
-/** 집게 바닥 착지 위치 — 테트리스 고스트처럼 표시 */
-export function Game2ClawFloorMarker({ claw }: Game2ClawFloorMarkerProps) {
-  const defaults = getDefaultGame2ClawState()
-  const xPercent = claw?.xPercent ?? defaults.xPercent
-  const playY = claw?.playY ?? defaults.playY
-  const marker = getClawFloorMarkerFromPlayPosition({ x: xPercent, y: playY })
+/** 집게 착지 예상 위치(참고용) — 더미 높이 포함, 잡을 대상 없으면 idle에서 숨김 */
+export function Game2ClawFloorMarker({ claw, dolls = [] }: Game2ClawFloorMarkerProps) {
+  const state = claw ?? getDefaultGame2ClawState()
+
+  if (!shouldShowClawFloorMarker(state, dolls)) return null
+
+  const tipY = getClawLandingMarkerTipY(state, dolls)
+  const marker = getClawFloorMarkerFromPlayPosition(
+    { x: state.xPercent, y: state.playY },
+    tipY,
+  )
 
   return (
     <div className="g2-claw-floor-marker" aria-hidden="true">

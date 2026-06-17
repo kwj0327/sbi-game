@@ -33,7 +33,7 @@ export const ALL_DOLL_COUNT = ALL_DOLL_IMAGES.length
 export const GAME1_SLOT_COUNT = 10
 
 /** Game 2 바닥 인형 수 */
-export const GAME2_SLOT_COUNT = 10
+export const GAME2_SLOT_COUNT = 20
 
 function pickRandomDollIndices(count: number): number[] {
   const pool = Array.from({ length: ALL_DOLL_COUNT }, (_, index) => index)

@@ -31,9 +31,13 @@ import {
   getGame2DollById,
   getGame2HeldDollReleasePoint,
   getHeldDollAttachCenter,
+  getDollVisualY,
+  getStackLiftAt,
+  getStackTopDollAt,
   isClawMovementLocked,
   lerpPlayPosition,
   movePlayPosition,
+  resolveHeldDollDropLanding,
   stepClawClose,
   type ClawCloseSimContext,
   type Game2DollState,
@@ -94,6 +98,30 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
     preloadDollAlphaMasks(dollsRef.current.map((doll) => doll.imageSrc))
   }, [])
 
+  // 무너짐: 받치던 인형이 빠지면(captured) 그 위 인형은 바닥으로 내려앉음
+  useEffect(() => {
+    const capturedIds = new Set(dolls.filter((d) => d.captured).map((d) => d.id))
+    if (capturedIds.size === 0) return
+    const hasOrphan = dolls.some(
+      (d) => d.supportId != null && capturedIds.has(d.supportId) && d.z > 0,
+    )
+    if (!hasOrphan) return
+
+    setDolls((prev) =>
+      prev.map((d) =>
+        d.supportId != null && capturedIds.has(d.supportId) && d.z > 0
+          ? { ...d, z: 0, stackLevel: 0, supportId: null, settling: true }
+          : d,
+      ),
+    )
+    const timer = window.setTimeout(() => {
+      setDolls((prev) =>
+        prev.map((d) => (d.settling ? { ...d, settling: false } : d)),
+      )
+    }, 420)
+    return () => window.clearTimeout(timer)
+  }, [dolls])
+
   const handleMove = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     setClaw((prev) => {
       if (isClawMovementLocked(prev)) return prev
@@ -117,6 +145,11 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
 
     setPlayNotice('')
 
+    // 더미가 있으면 그 꼭대기에서 멈추도록 집게를 미리 들어올림
+    const cur = clawRef.current
+    const liftZ = getStackLiftAt(dollsRef.current, cur.xPercent, cur.playY)
+    const clawLiftPercent = liftZ
+
     setClaw((prev) => {
       if (prev.phase !== 'idle') return prev
       return {
@@ -129,11 +162,12 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
         heldOffsetX: 0,
         heldOffsetY: 0,
         heldGripQuality: 1,
+        clawLiftPercent,
       }
     })
   }, [])
 
-  /** 운반 중 낙하 — 들고 있던 인형을 떨어뜨린 그 지점 바로 아래에 떨어뜨림 */
+  /** 운반 중 낙하 — 떨어진 시점 위치에 착지, 아래에 인형 있으면 그 위에 얹음 */
   const dropHeldDoll = useCallback(() => {
     const current = clawRef.current
     const heldId = current.heldDollId
@@ -142,16 +176,20 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
     const release =
       viewportRef.current?.measureHeldDollRelease() ??
       getGame2HeldDollReleasePoint(current)
-    // 보정 없이 떨어뜨린 시점의 위치 그대로 착지
-    const floor = { x: release.x, y: current.playY }
+    const landing = resolveHeldDollDropLanding(
+      release,
+      current.playY,
+      heldId,
+      dollsRef.current,
+    )
 
     // 배출구 구멍 위에서 놓쳤다면 — 그대로 배출구로 들어가 획득
     const chute = getGame2ChuteBounds()
     const overChute =
-      floor.x >= chute.leftX &&
-      floor.x <= chute.rightX &&
-      floor.y >= chute.topY &&
-      floor.y <= chute.bottomY
+      landing.xPercent >= chute.leftX &&
+      landing.xPercent <= chute.rightX &&
+      landing.playY >= chute.topY &&
+      landing.playY <= chute.bottomY
 
     if (overChute) {
       setDolls((prev) =>
@@ -162,7 +200,6 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
                 falling: true,
                 xPercent: release.x,
                 playY: release.y,
-                depthScale: release.depthScale,
               }
             : doll,
         ),
@@ -213,8 +250,8 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
               fallKind: 'floor' as const,
               xPercent: release.x,
               playY: release.y,
-              fallTargetXPercent: floor.x,
-              fallTargetPlayY: floor.y,
+              fallTargetXPercent: landing.xPercent,
+              fallTargetPlayY: landing.visualY,
               fallEndRotateDeg: endRotate,
             }
           : doll,
@@ -238,8 +275,11 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
                 ...doll,
                 falling: false,
                 fallKind: undefined,
-                xPercent: floor.x,
-                playY: floor.y,
+                xPercent: landing.xPercent,
+                playY: landing.playY,
+                z: landing.z,
+                stackLevel: landing.stackLevel,
+                supportId: landing.supportId,
                 rotateDeg: endRotate,
               }
             : doll,
@@ -262,7 +302,11 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
       setClaw((prev) => {
         if (prev.phase !== 'descending') return prev
         if (linear >= 1) {
-          // 사전 판정 없음 — 벌린 채(gripT 1) 착지, 오므림 시뮬레이션이 결과를 결정
+          const clawLiftPercent = getStackLiftAt(
+            dollsRef.current,
+            prev.xPercent,
+            prev.playY,
+          )
           return {
             ...prev,
             phase: 'down',
@@ -272,6 +316,7 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
             gripT: 1,
             heldOffsetX: 0,
             heldOffsetY: 0,
+            clawLiftPercent,
           }
         }
         return { ...prev, descendT: eased }
@@ -300,7 +345,12 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
 
       const current = clawRef.current
       const result = stepClawClose(
-        { x: current.xPercent, y: current.playY, gripT: current.gripT },
+        {
+          x: current.xPercent,
+          y: current.playY,
+          gripT: current.gripT,
+          clawLiftPercent: current.clawLiftPercent,
+        },
         dollsRef.current,
         dt,
         closeSimCtxRef.current ?? createClawCloseSimContext(),
@@ -335,28 +385,41 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
       setClaw((prev) => {
         if (prev.phase !== 'down') return prev
 
+        // 같은 발자국에 쌓인 인형이 있으면 맨 위 인형을 집는다
+        let grabbedId = result.grabbedId
+        if (grabbedId !== null) {
+          const top = getStackTopDollAt(
+            dollsRef.current,
+            prev.xPercent,
+            prev.playY,
+            Infinity,
+          )
+          if (top) grabbedId = top.id
+        }
+
         let heldOffsetX = 0
         let heldOffsetY = 0
-        if (result.grabbedId !== null) {
-          const heldDoll = getGame2DollById(dollsRef.current, result.grabbedId)
+        if (grabbedId !== null) {
+          const heldDoll = getGame2DollById(dollsRef.current, grabbedId)
           if (heldDoll) {
             const attach = getHeldDollAttachCenter({
               xPercent: prev.xPercent,
               playY: prev.playY,
               descendT: 1,
+              clawLiftPercent: prev.clawLiftPercent,
             })
             heldOffsetX = heldDoll.xPercent - attach.x
-            heldOffsetY = heldDoll.playY - attach.y
+            heldOffsetY = getDollVisualY(heldDoll) - attach.y
           }
         }
 
         return {
           ...prev,
           gripT: result.gripT,
-          heldDollId: result.grabbedId,
+          heldDollId: grabbedId,
           heldOffsetX,
           heldOffsetY,
-          heldGripQuality: result.grabbedId !== null ? result.grabQuality : 1,
+          heldGripQuality: grabbedId !== null ? result.grabQuality : 1,
         }
       })
 
@@ -600,6 +663,7 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
             descendT: 0,
             open: true,
             heldDollId: null,
+            clawLiftPercent: 0,
           }
         }
         return {

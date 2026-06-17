@@ -43,11 +43,15 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
   const phase = claw?.phase ?? defaults.phase
   const descendT = claw?.descendT ?? defaults.descendT
   const gripT = claw?.gripT ?? defaults.gripT
+  const clawLiftPercent = claw?.clawLiftPercent ?? defaults.clawLiftPercent
   const pose = open ? GAME2_CLAW_POSE.open : lerpClawPose(gripT)
 
   const render = getClawRenderFromPlayPosition(
     { x: xPercent, y: playY },
-    { descendT },
+    {
+      descendT,
+      liftPercent: phase === 'idle' ? 0 : clawLiftPercent,
+    },
   )
 
   // 잡은 지점 보존 — playfield % 오프셋을 rig 로컬 %로 변환 (rig는 depthScale로 스케일됨)
@@ -74,6 +78,7 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
       style={{
         ['--g2-claw-x' as string]: `${render.xPercent}%`,
         ['--g2-claw-rail-y' as string]: `${GAME2_CLAW.railY}%`,
+        ['--g2-cable-visual-trim' as string]: `${GAME2_CLAW.cableVisualTrim}%`,
         ['--g2-claw-cable-length' as string]: `${render.cableLengthPercent}%`,
         ['--g2-claw-rig-width' as string]: `${render.rigWidthPercent}%`,
         ['--g2-claw-depth-scale' as string]: `${render.depthScale}`,
@@ -124,6 +129,7 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
         {heldDoll ? (
           <span
             className="g2-claw__held-doll"
+            data-g2-depth-scale={heldDoll.depthScale}
             style={{
               ['--g2-held-rotate' as string]: `${heldDoll.rotateDeg}deg`,
               ['--g2-doll-face-x' as string]: `${heldDoll.faceScaleX}`,

@@ -16,10 +16,9 @@
     0 0 0 1px rgb(255 255 255 / 28%),
     0 0 10px rgb(255 61 122 / 22%);
   transition:
-    left 0.16s ease,
-    top 0.16s ease,
-    width 0.16s ease,
-    height 0.16s ease;
+    top 0.12s ease,
+    width 0.12s ease,
+    height 0.12s ease;
 }
 
 .g2-claw-floor-marker__corner {
