@@ -29,10 +29,12 @@
 }
 
 .points-use-modal__header {
+  position: relative;
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 56px;
 }
 
 .points-use-modal__title {
@@ -41,7 +43,16 @@
   font-weight: 700;
 }
 
+.points-use-modal__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 .points-use-modal__close {
+  position: absolute;
+  top: 0;
+  right: 0;
   min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
@@ -51,9 +62,221 @@
   background: var(--color-surface);
 }
 
+.points-use-modal__balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.points-use-modal__balance-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.points-use-modal__balance-value .point-amount__value {
+  font-size: 18px;
+}
+
 .points-use-modal__empty {
   margin: 24px 0 8px;
   font-size: 14px;
   text-align: center;
   color: var(--color-text-muted);
+}
+
+.points-use-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.points-use-modal__field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.points-use-modal__account-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid rgb(var(--color-primary-rgb) / 12%);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.points-use-modal__account-input:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary-rgb) / 42%);
+}
+
+.points-use-modal__account-input[aria-invalid='true'] {
+  border-color: rgb(220 38 38 / 40%);
+}
+
+.points-use-modal__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgb(var(--color-primary-rgb) / 6%);
+}
+
+.points-use-modal__controls-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.points-use-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.points-use-quantity__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary-rgb) / 12%);
+}
+
+.points-use-quantity__btn:disabled {
+  opacity: 0.35;
+}
+
+.points-use-quantity__value {
+  min-width: 88px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.points-use-modal__total {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.points-use-modal__total-cash {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.points-use-modal__submit {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.points-use-modal__submit:disabled {
+  opacity: 0.45;
+}
+
+.points-use-modal__message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+  color: #0f5132;
+  background: rgb(25 135 84 / 10%);
+}
+
+.points-use-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.points-use-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgb(15 15 26 / 56%);
+}
+
+.points-use-confirm__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 320px);
+  padding: 20px 18px;
+  border-radius: 18px;
+  background: var(--color-bg);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
+}
+
+.points-use-confirm__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.points-use-confirm__message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.points-use-confirm__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.points-use-confirm__cancel,
+.points-use-confirm__confirm {
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.points-use-confirm__cancel {
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.points-use-confirm__confirm {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.points-use-confirm__cancel:active,
+.points-use-confirm__confirm:active {
+  transform: scale(0.98);
 }

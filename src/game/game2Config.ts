@@ -207,7 +207,7 @@ export type Game2ClawState = {
  */
 
 /** 바닥 가이드 표시(영역 선·격자·번호) — 다시 켤 때까지 false */
-export const GAME2_SHOW_FLOOR_GUIDES = true
+export const GAME2_SHOW_FLOOR_GUIDES = false
 
 /** true면 인형 영역(격자·빨간 경계)만 — 집게·배출구 가이드 숨김 */
 export const GAME2_SHOW_DOLL_ZONE_GUIDE_ONLY = false

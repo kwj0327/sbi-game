@@ -64,7 +64,7 @@ export function PointsPanel() {
               </span>
             </span>
             <span className="points-panel__action-title">사용</span>
-            <span className="points-panel__action-desc">포인트로 구매</span>
+            <span className="points-panel__action-desc">포인트 현금 교환</span>
           </button>
         </div>
       </section>
