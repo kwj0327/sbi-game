@@ -14,9 +14,9 @@ export function BottomNav({ activeTab, onSelectTab }: BottomNavProps) {
         onClick={() => onSelectTab('home')}
       >
         <span className="bottom-nav__icon" aria-hidden="true">
-          🏠
+          🎮
         </span>
-        <span className="bottom-nav__label">홈</span>
+        <span className="bottom-nav__label">게임</span>
       </button>
       <button
         type="button"

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Game3DollDetail } from '../components/game3/Game3DollDetail'
 import { Game3ResetConfirm } from '../components/game3/Game3ResetConfirm'
 import { MobileLayout } from '../components/MobileLayout'
 import game3CollectionIcon from '../assets/game3-collection-icon.png'
@@ -14,6 +15,7 @@ type Game3Props = {
 export function Game3({ onExit }: Game3Props) {
   const { summary } = useDollCollection(ALL_DOLL_COUNT)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
+  const [selectedDollIndex, setSelectedDollIndex] = useState<number | null>(null)
 
   const handleResetClick = () => {
     if (summary.total === 0) return
@@ -53,36 +55,58 @@ export function Game3({ onExit }: Game3Props) {
             const count = summary.countsByIndex[index] ?? 0
             const collected = count > 0
 
+            const dollContent = (
+              <>
+                <div className="game3-doll__frame">
+                  <img
+                    src={imageSrc}
+                    alt=""
+                    className="game3-doll__image"
+                    draggable={false}
+                  />
+                  {!collected ? (
+                    <span className="game3-doll__lock" aria-hidden="true">
+                      🔒
+                    </span>
+                  ) : null}
+                  {count > 1 ? (
+                    <span className="game3-doll__count" aria-label={`${count}개 보유`}>
+                      ×{count}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="game3-doll__label">No.{index + 1}</p>
+              </>
+            )
+
             return (
               <li key={index}>
-                <article
-                  className={`game3-doll${collected ? ' game3-doll--collected' : ' game3-doll--locked'}`}
-                >
-                  <div className="game3-doll__frame">
-                    <img
-                      src={imageSrc}
-                      alt=""
-                      className="game3-doll__image"
-                      draggable={false}
-                    />
-                    {!collected ? (
-                      <span className="game3-doll__lock" aria-hidden="true">
-                        🔒
-                      </span>
-                    ) : null}
-                    {count > 1 ? (
-                      <span className="game3-doll__count" aria-label={`${count}개 보유`}>
-                        ×{count}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="game3-doll__label">No.{index + 1}</p>
-                </article>
+                {collected ? (
+                  <button
+                    type="button"
+                    className="game3-doll game3-doll--collected game3-doll--clickable"
+                    onClick={() => setSelectedDollIndex(index)}
+                    aria-label={`No.${index + 1} 인형 보기`}
+                  >
+                    {dollContent}
+                  </button>
+                ) : (
+                  <article className="game3-doll game3-doll--locked">{dollContent}</article>
+                )}
               </li>
             )
           })}
         </ul>
       </section>
+
+      {selectedDollIndex !== null ? (
+        <Game3DollDetail
+          dollIndex={selectedDollIndex}
+          imageSrc={ALL_DOLL_IMAGES[selectedDollIndex]}
+          count={summary.countsByIndex[selectedDollIndex] ?? 0}
+          onClose={() => setSelectedDollIndex(null)}
+        />
+      ) : null}
 
       {resetConfirmOpen ? (
         <Game3ResetConfirm

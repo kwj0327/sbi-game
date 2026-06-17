@@ -23,7 +23,10 @@
   width: calc(3px * var(--g2-stage-scale, 1));
   height: max(
     1.5%,
-    calc(var(--g2-claw-cable-length) - var(--g2-cable-visual-trim, 0%))
+    calc(
+      var(--g2-claw-cable-length) - var(--g2-cable-visual-trim, 0%) +
+        var(--g2-cable-visual-extend, 0%)
+    )
   );
   border-radius: 999px;
   background: linear-gradient(
@@ -173,7 +176,7 @@
   position: absolute;
   top: 37%;
   width: 18%;
-  height: 54%;
+  height: var(--g2-arm-height, 76%);
   z-index: 1;
   transform-origin: 50% 0;
   transition: transform 0.22s ease;
@@ -306,7 +309,7 @@
 .g2-claw__held-doll {
   position: absolute;
   left: calc(50% + var(--g2-held-off-x, 0%));
-  top: calc(94% + var(--g2-held-off-y, 0%));
+  top: calc(var(--g2-held-top, 98%) + var(--g2-held-off-y, 0%));
   z-index: 4;
   transform: translate(-50%, -42%) scale(var(--g2-held-scale, 1))
     scaleX(var(--g2-doll-face-x, 1)) rotate(var(--g2-held-rotate, 0deg));
@@ -316,5 +319,5 @@
 }
 
 .g2-claw--carrying.g2-claw--closed .g2-claw__held-doll {
-  top: calc(96% + var(--g2-held-off-y, 0%));
+  top: calc(var(--g2-held-top-closed, 100%) + var(--g2-held-off-y, 0%));
 }

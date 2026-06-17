@@ -1,0 +1,116 @@
+.game3-doll-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+}
+
+.game3-doll-detail__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgb(15 15 26 / 52%);
+  backdrop-filter: blur(2px);
+  animation: game3-doll-detail-fade-in 0.22s ease;
+}
+
+.game3-doll-detail__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 320px);
+  padding: 22px 20px 18px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(180deg, #fff 0%, #f7f7fb 100%);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+  animation: game3-doll-detail-pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.game3-doll-detail__name {
+  margin: 0;
+  font-size: clamp(18px, 5vw, 20px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.game3-doll-detail__number {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.game3-doll-detail__frame {
+  display: grid;
+  place-items: center;
+  width: min(72vw, 220px);
+  aspect-ratio: 1;
+  margin: 16px 0 12px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 35%, rgb(var(--color-primary-rgb) / 12%) 0%, transparent 68%),
+    var(--color-surface-elevated);
+}
+
+.game3-doll-detail__image {
+  display: block;
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgb(0 0 0 / 14%));
+}
+
+.game3-doll-detail__count {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.game3-doll-detail__close {
+  width: 100%;
+  min-height: var(--touch-min);
+  border: none;
+  border-radius: 12px;
+  font-size: clamp(15px, 4.1vw, 16px);
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
+  box-shadow: 0 8px 18px rgb(var(--color-primary-rgb) / 34%);
+}
+
+.game3-doll-detail__close:active {
+  transform: scale(0.98);
+}
+
+@keyframes game3-doll-detail-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes game3-doll-detail-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

@@ -405,7 +405,7 @@ export function getHeldDollAttachCenter(
   return {
     x: render.xPercent,
     // top 96% + translate(-42%) → 중심 = rigTop + 96%rigH + 8%dollH
-    y: rigTopYPercent + rigHeightPercent * 0.96 + dollHeightPercent * 0.08,
+    y: rigTopYPercent + rigHeightPercent * GAME2_CLAW.rigTipYFrac + dollHeightPercent * 0.08,
   }
 }
 
@@ -427,7 +427,7 @@ export function getGame2HeldDollReleasePoint(
     rigWidth * depthScale * (viewWidth / viewHeight) * (380 / 319)
   const rigTopYPercent = railY + render.cableLengthPercent
   /** .g2-claw--carrying.g2-claw--closed .g2-claw__held-doll top 96% */
-  const heldTopRatio = 0.96
+  const heldTopRatio = GAME2_CLAW.rigTipYFrac
 
   if (playfield && playfield.width > 0 && playfield.height > 0) {
     const scale = playfield.stageScale > 0 ? playfield.stageScale : 1
@@ -901,12 +901,14 @@ export function measureGrabbedPartWidthPx(
 
 /**
  * 집게 rig 기하 비율 — game2-claw.css와 동기.
- * (팔 피벗 left 31%/69%, 팔 높이 54%H, 팁 폭 = 0.5×0.28×0.18W)
+ * (팔 피벗 left 31%/69%, 팔 높이 rigArmHeightFrac, 팁 폭 = 0.5×0.28×0.18W)
  */
 const CLAW_RIG = {
   aspectHOverW: 380 / 319,
   pivotXFrac: 0.31,
-  armHeightFrac: 0.54,
+  get armHeightFrac() {
+    return GAME2_CLAW.rigArmHeightFrac
+  },
   lowerExtraFrac: 0.04,
   tipHalfWidthFrac: (0.5 * 0.28 * 0.18) / 2,
 } as const
@@ -1594,7 +1596,7 @@ export function getClawTipWorldY(
   const liftAboveFootprint = lerp(cableVisualLift, stackStopLift, descendT)
   const rigTopY = claw.playY - liftAboveFootprint - rigHeightPercent * 0.88
   // CSS rig — 팁은 rig 하단(약 96%) · getHeldDollAttachCenter와 동기
-  return rigTopY + rigHeightPercent * 0.96
+  return rigTopY + rigHeightPercent * GAME2_CLAW.rigTipYFrac
 }
 
 /**

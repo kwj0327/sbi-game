@@ -8,7 +8,7 @@ import game1Doll07 from '../assets/dolls/game1-doll-07.png'
 import game1Doll08 from '../assets/dolls/game1-doll-08.png'
 import game1Doll09 from '../assets/dolls/game1-doll-09.png'
 import game1Doll10 from '../assets/dolls/game1-doll-10.png'
-import { CHARACTER_IMAGES } from './characterConfig'
+import { CHARACTER_IMAGES, CHARACTER_NAMES } from './characterConfig'
 
 /** 기존 Game 1·2 인형 (No.1~10) */
 export const ORIGINAL_DOLL_IMAGES = [
@@ -24,10 +24,19 @@ export const ORIGINAL_DOLL_IMAGES = [
   game1Doll10,
 ] as const
 
-/** 전체 인형 도감 — 원본 10 + 캐릭터 13 = 23종 */
+/** 전체 인형 도감 — 원본 10 + 캐릭터 45 = 55종 */
 export const ALL_DOLL_IMAGES = [...ORIGINAL_DOLL_IMAGES, ...CHARACTER_IMAGES] as const
 
 export const ALL_DOLL_COUNT = ALL_DOLL_IMAGES.length
+
+export const ORIGINAL_DOLL_COUNT = ORIGINAL_DOLL_IMAGES.length
+
+/** 도감·상세 화면용 표시 이름 */
+export function getDollDisplayName(index: number): string {
+  if (index < 0 || index >= ALL_DOLL_COUNT) return `No.${index + 1}`
+  if (index < ORIGINAL_DOLL_COUNT) return `No.${index + 1}`
+  return CHARACTER_NAMES[index - ORIGINAL_DOLL_COUNT] ?? `No.${index + 1}`
+}
 
 /** Game 1 회전 레일 슬롯 수 */
 export const GAME1_SLOT_COUNT = 10

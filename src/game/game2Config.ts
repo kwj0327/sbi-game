@@ -31,6 +31,12 @@ export const GAME2_CLAW = {
    * (anchor − railY)
    */
   cableVisualTrim: GAME2_CLAW_CABLE_ANCHOR_Y - GAME2_CLAW_RAIL_Y,
+  /** 케이블 시각 연장 — 집게 위치 유지, stem과 겹침 (stage %) */
+  cableVisualExtend: 4,
+  /** CSS·시뮬 집게발 컨테이너 높이 (rig 높이 대비, 0–1) */
+  rigArmHeightFrac: 0.76,
+  /** rig 높이 대비 팁 y — game2-claw.css 팔 길이와 동기 */
+  rigTipYFrac: 1.08,
   /** 하강 애니메이션 길이 (ms) */
   descendDurationMs: 900,
   /** 바닥 착지 후 상승까지 대기 (ms) */
