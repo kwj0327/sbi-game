@@ -11,6 +11,11 @@ import character10 from '../assets/characters/character-10.png'
 import character11 from '../assets/characters/character-11.png'
 import character12 from '../assets/characters/character-12.png'
 import character13 from '../assets/characters/character-13.png'
+import character14 from '../assets/characters/character-14.png'
+import character15 from '../assets/characters/character-15.png'
+import character16 from '../assets/characters/character-16.png'
+import character17 from '../assets/characters/character-17.png'
+import character18 from '../assets/characters/character-18.png'
 
 export const CHARACTER_IMAGES = [
   character01,
@@ -26,6 +31,11 @@ export const CHARACTER_IMAGES = [
   character11,
   character12,
   character13,
+  character14,
+  character15,
+  character16,
+  character17,
+  character18,
 ] as const
 
 export const CHARACTER_NAMES = [
@@ -42,6 +52,11 @@ export const CHARACTER_NAMES = [
   '도라에몽',
   '케로피',
   '토토로',
+  '헬로키티(여름)',
+  '짱구(코스튬)',
+  '비버',
+  '흰둥이',
+  '비버(왕관)',
 ] as const
 
 export const CHARACTER_COUNT = CHARACTER_IMAGES.length
