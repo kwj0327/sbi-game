@@ -4,6 +4,7 @@ import {
   GAME2_CLAW_POSE,
   GAME2_STAGE,
 } from '../../game/game2Config'
+import { GAME3_GRAB } from '../../game/game3Config'
 import {
   getClawRenderFromPlayPosition,
   getDefaultGame2ClawState,
@@ -44,6 +45,30 @@ function lerpClawPose(gripT: number): ClawPose {
   }
 }
 
+/**
+ * 좌·우 팔 독립 오므림 — Game3 인형 실루엣 맞춤.
+ * 어깨(윗팔)·관절 위치·팁은 벌린 상태로 고정하고, 다리(아랫팔)만 gripT로 움직인다.
+ */
+function lerpClawPoseSplit(gripTLeft: number, gripTRight: number): ClawPose {
+  const opened = GAME2_CLAW_POSE.open
+  const tl = Math.min(1, Math.max(0, gripTLeft))
+  const tr = Math.min(1, Math.max(0, gripTRight))
+
+  // 어깨 고정 시 다리가 인형까지 닿도록 Game3 전용으로 더 깊이 접는다
+  const closedLowerL = GAME3_GRAB.lowerClosedLeftDeg
+  const closedLowerR = GAME3_GRAB.lowerClosedRightDeg
+
+  return {
+    armLeft: opened.armLeft,
+    armRight: opened.armRight,
+    lowerLeft: closedLowerL + (opened.lowerLeft - closedLowerL) * tl,
+    lowerRight: closedLowerR + (opened.lowerRight - closedLowerR) * tr,
+    tipShiftLeft: opened.tipShiftLeft,
+    tipShiftRight: opened.tipShiftRight,
+    jointTop: opened.jointTop,
+  }
+}
+
 export function Game2Claw({
   claw,
   heldDoll = null,
@@ -58,8 +83,15 @@ export function Game2Claw({
   const phase = claw?.phase ?? defaults.phase
   const descendT = claw?.descendT ?? defaults.descendT
   const gripT = claw?.gripT ?? defaults.gripT
+  const gripTLeft = claw?.gripTLeft
+  const gripTRight = claw?.gripTRight
   const clawLiftPercent = claw?.clawLiftPercent ?? defaults.clawLiftPercent
-  const pose = open ? GAME2_CLAW_POSE.open : lerpClawPose(gripT)
+  const useSplitGrip = gripTLeft !== undefined && gripTRight !== undefined
+  const pose = open
+    ? GAME2_CLAW_POSE.open
+    : useSplitGrip
+      ? lerpClawPoseSplit(gripTLeft, gripTRight)
+      : lerpClawPose(gripT)
 
   const render =
     renderOverride ??

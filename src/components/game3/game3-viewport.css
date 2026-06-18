@@ -41,6 +41,26 @@
   --g2-claw-rail-y: 0%;
   --g2-stage-scale: calc(var(--g3-stage-scale, 1) * var(--g3-rig-visual-scale, 0.32));
   will-change: transform;
+  z-index: 8;
+}
+
+/* 잡은 인형은 rig 뒤 — 팔·관절이 앞에 보이도록 */
+.g3-world__playfield .g2-claw__held-doll {
+  z-index: 0;
+}
+
+.g3-world__playfield .g2-claw__body {
+  z-index: 1;
+}
+
+.g3-world__playfield .g2-claw__arms,
+.g3-world__playfield .g2-claw__arm {
+  z-index: 2;
+}
+
+.g3-world__playfield .g2-claw__arm-joint,
+.g3-world__playfield .g2-claw__link {
+  z-index: 3;
 }
 
 /* 케이블·본체 left를 월드 스크롤과 동일 타이밍(0.1s linear)으로 보간 */
@@ -93,5 +113,17 @@
   width: 0;
   border-left: 2px dashed #ff3b3b;
   opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ⬛ 디버그 — 게임 바닥선 (GAME3_WORLD.floorY, 인형 발 위치) */
+.g3-guide-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: 0;
+  border-top: 5px dashed #000;
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 80%));
   pointer-events: none;
 }

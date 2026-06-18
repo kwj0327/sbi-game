@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { GameFooterStatus } from '../components/GameFooterStatus'
 import { GameFooterBar } from '../components/GameFooterBar'
@@ -10,6 +10,7 @@ import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { ALL_DOLL_IMAGES } from '../game/dollConfig'
 import { addCollectedDoll } from '../game/dollCollection'
+import { preloadDollAlphaMasks } from '../game/dollAlphaMask'
 import { GAME2_CLAW } from '../game/game2Config'
 import { easeOutCubic } from '../game/game2PlayArea'
 import {
@@ -21,15 +22,15 @@ import {
 } from '../game/game3Config'
 import {
   createRandomGame3Dolls,
-  findGame3GrabTarget,
   getGame3ChuteCenterX,
   getGame3DollById,
-  getGame3GripTForDoll,
+  getGame3GripTForDollSplit,
+  getGame3HeldDollAttachCenter,
   getGame3HeldDollOffsets,
   getGame3HeldDollReleasePoint,
-  getGame3StackLiftAt,
   lerpGame3ClawX,
   moveGame3ClawX,
+  resolveGame3DescentStop,
   type Game3DollState,
 } from '../game/game3PlayArea'
 import './Game3.css'
@@ -75,6 +76,42 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
   const returnOriginXRef = useRef<number | null>(null)
   const homewardOriginXRef = useRef<number | null>(null)
   const viewportRef = useRef<Game3ViewportHandle>(null)
+  const descentStopRef = useRef<{ clawLiftPercent: number; hitDollId: number | null }>({
+    clawLiftPercent: 0,
+    hitDollId: null,
+  })
+  /** 오므림 직후 바닥 인형 위치 — useLayoutEffect에서 held 위치 보정용 */
+  const pendingHeldSnapRef = useRef<{
+    dollId: number
+    xPercent: number
+    centerYPercent: number
+  } | null>(null)
+
+  useEffect(() => {
+    preloadDollAlphaMasks(ALL_DOLL_IMAGES)
+  }, [])
+
+  useLayoutEffect(() => {
+    const pending = pendingHeldSnapRef.current
+    if (!pending || claw.heldDollId !== pending.dollId) return
+
+    const heldMeasure = viewportRef.current?.measureHeldDoll()
+    if (!heldMeasure) return
+
+    pendingHeldSnapRef.current = null
+    const dX = pending.xPercent - heldMeasure.xPercent
+    const dY = pending.centerYPercent - heldMeasure.centerYPercent
+    if (Math.abs(dX) < 0.02 && Math.abs(dY) < 0.02) return
+
+    setClaw((prev) => {
+      if (prev.heldDollId !== pending.dollId) return prev
+      return {
+        ...prev,
+        heldOffsetX: prev.heldOffsetX + dX,
+        heldOffsetY: prev.heldOffsetY + dY,
+      }
+    })
+  }, [claw.heldDollId])
 
   const controlsLocked = isGame3ClawMovementLocked(claw) || successDollImage !== null
 
@@ -101,8 +138,8 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     }
 
     setPlayNotice('')
-    const clawX = clawRef.current.xPercent
-    const stackLift = getGame3StackLiftAt(dollsRef.current, clawX)
+    // 정확한 정지 높이는 하강 effect에서 실제 DOM을 측정해 정한다
+    descentStopRef.current = { clawLiftPercent: 0, hitDollId: null }
 
     setClaw((prev) => {
       if (prev.phase !== 'idle') return prev
@@ -110,47 +147,66 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
         ...prev,
         open: true,
         phase: 'descending',
-        descendT: 0,
+        // 하강은 lift를 직접 구동 — descendT=1 고정, clawLiftPercent로 높이 제어
+        descendT: 1,
         heldDollId: null,
         gripT: 0,
+        gripTLeft: undefined,
+        gripTRight: undefined,
         heldOffsetX: 0,
         heldOffsetY: 0,
-        clawLiftPercent: stackLift,
+        clawLiftPercent: GAME3_CLAW.cableVisualLift,
       }
     })
   }, [])
 
+  // 하강 — 실제 렌더된 집게(초록 몸통/빨강 다리)와 인형 실루엣을 DOM에서 측정해
+  // 부품이 인형에 닿는(또는 바닥) 높이까지만 내려간다. 시각과 판정이 항상 일치.
   useEffect(() => {
     if (claw.phase !== 'descending') return
 
-    const start = performance.now()
+    const clawX = clawRef.current.xPercent
+    const measured = viewportRef.current?.measureDescentStop() ?? null
+    const fallback = resolveGame3DescentStop(clawX, dollsRef.current)
+    const stopLift = measured?.clawLiftPercent ?? fallback.clawLiftPercent
+    const hitDollId = measured?.hitDollId ?? fallback.hitDoll?.id ?? null
+    descentStopRef.current = { clawLiftPercent: stopLift, hitDollId }
+
+    const startLift = GAME3_CLAW.cableVisualLift
     const { descendDurationMs } = GAME3_CLAW
+    const start = performance.now()
     let frame = 0
 
     const animate = (now: number) => {
       const linear = Math.min(1, (now - start) / descendDurationMs)
       const eased = easeOutCubic(linear)
+      const lift = startLift + (stopLift - startLift) * eased
 
-      setClaw((prev) => {
-        if (prev.phase !== 'descending') return prev
-        if (linear >= 1) {
-          const target = findGame3GrabTarget(dollsRef.current, prev.xPercent)
+      if (linear >= 1) {
+        setClaw((prev) =>
+          prev.phase === 'descending'
+            ? {
+                ...prev,
+                phase: 'down',
+                descendT: 1,
+                clawLiftPercent: stopLift,
+                open: false,
+                gripT: 1,
+                gripTLeft: 1,
+                gripTRight: 1,
+                heldDollId: null,
+                heldOffsetX: 0,
+                heldOffsetY: 0,
+              }
+            : prev,
+        )
+        return
+      }
 
-          return {
-            ...prev,
-            phase: 'down',
-            descendT: 1,
-            open: false,
-            gripT: 1,
-            heldDollId: target?.id ?? null,
-            heldOffsetX: 0,
-            heldOffsetY: 0,
-          }
-        }
-        return { ...prev, descendT: eased }
-      })
-
-      if (linear < 1) frame = requestAnimationFrame(animate)
+      setClaw((prev) =>
+        prev.phase === 'descending' ? { ...prev, clawLiftPercent: lift } : prev,
+      )
+      frame = requestAnimationFrame(animate)
     }
 
     frame = requestAnimationFrame(animate)
@@ -163,49 +219,87 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
 
     const start = performance.now()
     const { closeDurationMs, holdAtBottomMs } = GAME3_CLAW
-    const heldId = clawRef.current.heldDollId
-    const heldDoll = heldId !== null ? getGame3DollById(dollsRef.current, heldId) : null
-    // 인형 테두리에 맞추되, 집게가 항상 눈에 띄게 닫히도록 상한을 둔다
-    const targetGripT = heldDoll
-      ? Math.min(getGame3GripTForDoll(heldDoll), GAME3_CLAW.maxGrabGripT)
-      : 0
+    const grabId = descentStopRef.current.hitDollId
+    const grabDoll =
+      grabId !== null ? getGame3DollById(dollsRef.current, grabId) : null
+    const clawAtGrab = {
+      xPercent: clawRef.current.xPercent,
+      descendT: 1 as const,
+      clawLiftPercent: clawRef.current.clawLiftPercent,
+    }
+    const targetGrip = grabDoll
+      ? getGame3GripTForDollSplit(grabDoll, clawAtGrab)
+      : { left: 0, right: 0 }
     let frame = 0
     let holdTimer: number | null = null
 
     const animate = (now: number) => {
       const t = Math.min(1, (now - start) / closeDurationMs)
-      const gripT = 1 - t * (1 - targetGripT)
+      const gripTLeft = 1 - t * (1 - targetGrip.left)
+      const gripTRight = 1 - t * (1 - targetGrip.right)
       setClaw((prev) => {
         if (prev.phase !== 'down') return prev
-        return { ...prev, gripT }
+        return {
+          ...prev,
+          gripTLeft,
+          gripTRight,
+          gripT: Math.min(gripTLeft, gripTRight),
+        }
       })
 
       if (t < 1) {
         frame = requestAnimationFrame(animate)
       } else {
-        holdTimer = window.setTimeout(() => {
+        // 오므림 완료 — DOM이 최종 grip 포즈로 그려진 뒤 실제 다리 위치로 파지 판정
+        requestAnimationFrame(() => {
           setClaw((prev) => {
             if (prev.phase !== 'down') return prev
-            const held = getGame3DollById(dollsRef.current, prev.heldDollId)
-            if (!held) return { ...prev, phase: 'ascending' }
+            const hitId = descentStopRef.current.hitDollId
+            if (hitId === null) return prev
 
-            const offsets = getGame3HeldDollOffsets(
-              {
-                xPercent: prev.xPercent,
-                descendT: 1,
-                clawLiftPercent: prev.clawLiftPercent,
-              },
-              held,
-            )
+            const held = getGame3DollById(dollsRef.current, hitId)
+            if (!held) return prev
+
+            // hitId는 하강 DOM 측정(measureDescentStop)으로 정해짐 — 하강·오므림이 맞으면 파지
+
+            const clawAtAttach = {
+              xPercent: prev.xPercent,
+              descendT: 1 as const,
+              clawLiftPercent: prev.clawLiftPercent,
+            }
+            const floorMeasure = viewportRef.current?.measureDollCenter(hitId)
+            if (floorMeasure) {
+              pendingHeldSnapRef.current = {
+                dollId: hitId,
+                xPercent: floorMeasure.xPercent,
+                centerYPercent: floorMeasure.centerYPercent,
+              }
+            }
+            const offsets = floorMeasure
+              ? (() => {
+                  const attach = getGame3HeldDollAttachCenter(clawAtAttach)
+                  return {
+                    heldOffsetX: floorMeasure.xPercent - attach.x,
+                    heldOffsetY: floorMeasure.centerYPercent - attach.y,
+                  }
+                })()
+              : getGame3HeldDollOffsets(clawAtAttach, held)
 
             return {
               ...prev,
-              phase: 'ascending',
+              heldDollId: hitId,
               heldOffsetX: offsets.heldOffsetX,
               heldOffsetY: offsets.heldOffsetY,
             }
           })
-        }, holdAtBottomMs)
+
+          holdTimer = window.setTimeout(() => {
+            setClaw((prev) => {
+              if (prev.phase !== 'down') return prev
+              return { ...prev, phase: 'ascending' }
+            })
+          }, holdAtBottomMs)
+        })
       }
     }
 
@@ -248,6 +342,8 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
             open: true,
             heldDollId: null,
             gripT: 0,
+            gripTLeft: undefined,
+            gripTRight: undefined,
             clawLiftPercent: 0,
           }
         }
@@ -355,6 +451,8 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
           open: true,
           heldDollId: null,
           gripT: 1,
+          gripTLeft: undefined,
+          gripTRight: undefined,
         }
       })
     }, GAME3_CLAW.holdAtChuteMs)
@@ -402,6 +500,8 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
             open: true,
             heldDollId: null,
             gripT: 0,
+            gripTLeft: undefined,
+            gripTRight: undefined,
             clawLiftPercent: 0,
           }
         }

@@ -21,8 +21,23 @@
 }
 
 .g3-doll-sprite {
+  position: relative;
+  z-index: 1;
   display: block;
-  width: calc(var(--g3-doll-size, 184px) * var(--g3-stage-scale, 1));
-  height: calc(var(--g3-doll-size, 184px) * var(--g3-stage-scale, 1));
+  width: calc(var(--g3-doll-size, 220px) * var(--g3-stage-scale, 1));
+  height: calc(var(--g3-doll-size, 220px) * var(--g3-stage-scale, 1));
   object-fit: contain;
+}
+
+/* 디버그 — 알파 실루엣(인형별 인식 영역). 인형 뒤에 살짝 큰 마스크로 윤곽만 표시 */
+.g3-doll-silhouette {
+  position: absolute;
+  inset: -3px;
+  z-index: 0;
+  pointer-events: none;
+  transform: scale(1.02);
+  transform-origin: center bottom;
+  -webkit-mask: var(--g3-doll-mask) center / contain no-repeat;
+  mask: var(--g3-doll-mask) center / contain no-repeat;
+  background: rgb(255 255 255 / 88%);
 }

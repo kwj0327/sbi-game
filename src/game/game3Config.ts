@@ -59,7 +59,7 @@ export function getGame3ChuteFallSequenceMs() {
 }
 
 export const GAME3_DOLLS = {
-  emojiSizePx: 280,
+  emojiSizePx: 220,
   /** 집게 x와 이 거리(%) 이내면 잡기 시도 */
   grabRadiusX: 7,
   /** 경계선 오른쪽 여백 (world %) */
@@ -77,6 +77,29 @@ export const GAME3_DOLLS = {
   grabContactHeightFrac: 0.85,
   /** 집게가 인형 테두리에 맞춰 오므릴 때 추가 조임 (디자인 px) */
   gripSqueezePx: 8,
+  /** 오므림 시 집게 중심에서 인식할 실루엣 반경 (디자인 px) */
+  gripTipRadiusPx: 10,
+} as const
+
+/**
+ * 잡기 닫힘 — 어깨(윗팔)는 벌린 상태로 고정하므로, 다리(아랫팔)가 인형까지 닿도록
+ * Game2(±60°)보다 훨씬 깊이 안쪽으로 접는 각도. (open 다리 각도는 ±100°)
+ */
+export const GAME3_GRAB = {
+  lowerClosedLeftDeg: -125,
+  lowerClosedRightDeg: 125,
+} as const
+
+/** 하강 충돌 반응 — 다리/몸통이 인형에 부딪히면 인형이 밀리고 회전 (의사물리) */
+export const GAME3_PHYSICS = {
+  /** 한쪽 다리에 닿은 인형이 옆으로 밀리는 속도 (world % / ms) */
+  pushSpeedPctPerMs: 0.045,
+  /** 밀릴 때 같이 도는 회전 속도 (deg / ms) */
+  rotSpeedDegPerMs: 0.05,
+  /** 충돌로 누적될 수 있는 최대 회전 (deg) */
+  maxRotateDeg: 28,
+  /** 인형 중심이 머물 수 있는 좌측 한계 여백 (배출구 경계 기준 world %) */
+  pushBoundMargin: 1.5,
 } as const
 
 export function getDefaultGame3ClawState(): Game2ClawState {

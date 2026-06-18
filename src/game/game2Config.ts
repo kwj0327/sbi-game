@@ -195,6 +195,9 @@ export type Game2ClawState = {
   heldDollId: number | null
   /** 닫힘 포즈 보간 — 0: 완전 오므림(빈 집게) … 1: open 포즈. 잡은 부위 두께로 결정 */
   gripT: number
+  /** Game3 — 좌·우 독립 오므림 (둘 다 정의되면 각 팔에 개별 적용) */
+  gripTLeft?: number
+  gripTRight?: number
   /** 잡은 순간 인형 중심 − 기본 부착점 (playfield %) — 인형이 제자리에 머물게 보정 */
   heldOffsetX: number
   heldOffsetY: number

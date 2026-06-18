@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { preloadDollAlphaMasks } from '../../game/dollAlphaMask'
 import type { Game3DollState } from '../../game/game3PlayArea'
 import { getGame3DollVisualY } from '../../game/game3PlayArea'
 import './game3-dolls.css'
@@ -8,6 +10,19 @@ type Game3DollsProps = {
 }
 
 export function Game3Dolls({ dolls, heldDollId }: Game3DollsProps) {
+  const [, setMasksReady] = useState(0)
+
+  useEffect(() => {
+    const srcs = Array.from(new Set(dolls.map((doll) => doll.imageSrc)))
+    let cancelled = false
+    preloadDollAlphaMasks(srcs).then(() => {
+      if (!cancelled) setMasksReady((n) => n + 1)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [dolls])
+
   const visible = dolls
     .filter((doll) => !doll.captured && !doll.falling && doll.id !== heldDollId)
     .sort((a, b) => a.stackLevel - b.stackLevel)
@@ -17,6 +32,9 @@ export function Game3Dolls({ dolls, heldDollId }: Game3DollsProps) {
       {visible.map((doll) => (
         <div
           key={doll.id}
+          data-doll-id={doll.id}
+          data-doll-mask-src={doll.imageSrc}
+          data-doll-face-x={doll.faceScaleX}
           className={`g3-dolls__item${doll.stackLevel > 0 ? ' g3-dolls__item--stacked' : ''}`}
           style={{
             left: `${doll.xPercent}%`,
@@ -26,6 +44,13 @@ export function Game3Dolls({ dolls, heldDollId }: Game3DollsProps) {
             ['--g3-doll-face-x' as string]: `${doll.faceScaleX}`,
           }}
         >
+          <div
+            className="g3-doll-silhouette"
+            aria-hidden="true"
+            style={{
+              ['--g3-doll-mask' as string]: `url(${doll.imageSrc})`,
+            }}
+          />
           <img src={doll.imageSrc} alt="" className="g3-doll-sprite" draggable={false} />
         </div>
       ))}
