@@ -1,0 +1,28 @@
+.g3-dolls {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* 2D — 발바닥을 바닥선에 맞춤 (bottom 기준, 가로만 이동) */
+.g3-dolls__item {
+  position: absolute;
+  transform: translateX(-50%)
+    scale(var(--g3-doll-face-x, 1), 1)
+    rotate(var(--g3-doll-rotate, 0deg));
+  transform-origin: center bottom;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 14%));
+}
+
+.g3-dolls__item--stacked {
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 16%));
+}
+
+.g3-doll-sprite {
+  display: block;
+  width: calc(var(--g3-doll-size, 184px) * var(--g3-stage-scale, 1));
+  height: calc(var(--g3-doll-size, 184px) * var(--g3-stage-scale, 1));
+  object-fit: contain;
+}

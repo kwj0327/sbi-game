@@ -1,0 +1,43 @@
+.g3-falling-dolls {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.g3-dolls__item--falling {
+  animation: g3-doll-fall-to-chute var(--g3-fall-duration, 1.2s) cubic-bezier(0.33, 0.82, 0.4, 1)
+    forwards;
+}
+
+@keyframes g3-doll-fall-to-chute {
+  0% {
+    transform: translateX(-50%)
+      scale(calc(var(--g3-doll-face-x, 1)), 1)
+      rotate(var(--g3-doll-rotate, 0deg));
+    opacity: 1;
+  }
+
+  92% {
+    transform: translate3d(
+        calc(-50% + var(--fall-to-center-x, 0px)),
+        var(--fall-to-chute-y, 96px),
+        0
+      )
+      scale(calc(var(--g3-doll-face-x, 1) * var(--g3-fall-scale-end, 0.42)), 1)
+      rotate(var(--g3-doll-rotate, 0deg));
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(
+        calc(-50% + var(--fall-to-center-x, 0px)),
+        var(--fall-to-chute-y, 96px),
+        0
+      )
+      scale(calc(var(--g3-doll-face-x, 1) * var(--g3-fall-scale-end, 0.42)), 1)
+      rotate(var(--g3-doll-rotate, 0deg));
+    opacity: 0;
+  }
+}

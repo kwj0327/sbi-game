@@ -6,6 +6,7 @@ import { type GameId } from './game/games'
 import { useCollectionSync } from './hooks/useCollectionSync'
 import { usePointsSync } from './hooks/usePointsSync'
 import { ClawGame } from './screens/ClawGame'
+import { CollectionScreen } from './screens/CollectionScreen'
 import { Game2 } from './screens/Game2'
 import { Game3 } from './screens/Game3'
 import { HomeScreen } from './screens/HomeScreen'
@@ -32,7 +33,11 @@ function AppContent() {
   }
 
   if (screen === 'game3') {
-    return <Game3 onExit={() => setScreen('home')} />
+    return <Game3 onExit={() => setScreen('home')} onGoToAttendance={goToAttendance} />
+  }
+
+  if (screen === 'collection') {
+    return <CollectionScreen onExit={() => setScreen('home')} />
   }
 
   return (

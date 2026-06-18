@@ -1,6 +1,6 @@
 import { addPoints, DOLL_COLLECT_POINT_REWARD, DOLL_EXCHANGE_POINT_VALUE } from './points'
 
-export type CollectionSource = 'claw' | 'game2'
+export type CollectionSource = 'claw' | 'game2' | 'game3'
 
 export type CollectedDollEntry = {
   id: string

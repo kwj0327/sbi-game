@@ -1,0 +1,154 @@
+.collection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px 28px;
+}
+
+.collection__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 18px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+}
+
+.collection__hero {
+  display: block;
+  width: min(168px, 52vw);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 10%));
+}
+
+.collection__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.collection__subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text-muted);
+  white-space: pre-line;
+}
+
+.collection__reset {
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-top: 4px;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.collection__reset:active {
+  transform: scale(0.98);
+  background: var(--color-surface-elevated);
+}
+
+.collection__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collection-doll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: inherit;
+  font: inherit;
+}
+
+.collection-doll--clickable {
+  cursor: pointer;
+}
+
+.collection-doll--clickable:active .collection-doll__frame {
+  transform: scale(0.97);
+}
+
+.collection-doll__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 4%);
+  transition: transform 0.15s ease;
+}
+
+.collection-doll--collected .collection-doll__frame {
+  border-color: rgb(var(--color-primary-rgb) / 22%);
+  background:
+    radial-gradient(circle at 50% 30%, rgb(var(--color-primary-rgb) / 10%) 0%, transparent 68%),
+    var(--color-surface);
+}
+
+.collection-doll--locked .collection-doll__image {
+  opacity: 0.28;
+  filter: grayscale(1);
+}
+
+.collection-doll__image {
+  display: block;
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}
+
+.collection-doll__lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  opacity: 0.72;
+}
+
+.collection-doll__count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 28px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  background: var(--color-primary);
+  box-shadow: 0 4px 10px rgb(var(--color-primary-rgb) / 28%);
+}
+
+.collection-doll__label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.collection-doll--collected .collection-doll__label {
+  color: var(--color-text);
+}

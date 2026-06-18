@@ -1,0 +1,77 @@
+.g3-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #f8c8dc;
+}
+
+.g3-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  /* 집게 이동 반복(100ms)과 동일 타이밍 → 스크롤·집게 동기화, 끊김 제거 */
+  transition: transform 0.1s linear;
+}
+
+.g3-world__bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 제공된 이미지의 맨 왼쪽부터 시작 (오른쪽이 잘림) */
+  object-position: left center;
+  pointer-events: none;
+}
+
+.g3-world__playfield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Game2Claw — 2D world 좌표계, 크기 축소 */
+.g3-world__playfield .g2-claw {
+  --g2-claw-rail-y: 0%;
+  --g2-stage-scale: calc(var(--g3-stage-scale, 1) * 0.32);
+  will-change: transform;
+}
+
+/* 케이블·본체 left를 월드 스크롤과 동일 타이밍(0.1s linear)으로 보간 */
+.g3-world__playfield .g2-claw__cable,
+.g3-world__playfield .g2-claw__rig {
+  transition: left 0.1s linear;
+}
+
+.g3-world__playfield .g2-stage__playfield {
+  position: absolute;
+  inset: 0;
+}
+
+/* 🟡 배출구 영역 — 빨간선 왼쪽 (선물상자) */
+.g3-chute-zone {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px dashed rgb(255 210 60 / 85%);
+  background: rgb(255 220 80 / 12%);
+  pointer-events: none;
+}
+
+/* 배출구 / 플레이 경계 — 선물상자 오른쪽 */
+.g3-guide-boundary {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 0;
+  border-left: 2px dashed #ff3b3b;
+  opacity: 0.9;
+  pointer-events: none;
+}

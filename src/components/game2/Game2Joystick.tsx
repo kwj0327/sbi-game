@@ -9,6 +9,8 @@ type Game2JoystickProps = {
   onMove?: (direction: Game2MoveDirection) => void
   disabled?: boolean
   className?: string
+  /** 좌우만 사용 (위·아래 제거) */
+  horizontalOnly?: boolean
 }
 
 function getJoystickMetrics(base: HTMLDivElement) {
@@ -21,7 +23,12 @@ function getJoystickMetrics(base: HTMLDivElement) {
   return { maxTravel, deadZone }
 }
 
-export function Game2Joystick({ onMove, disabled = false, className }: Game2JoystickProps) {
+export function Game2Joystick({
+  onMove,
+  disabled = false,
+  className,
+  horizontalOnly = false,
+}: Game2JoystickProps) {
   const baseRef = useRef<HTMLDivElement>(null)
   const activePointerRef = useRef<number | null>(null)
   const [knobOffset, setKnobOffset] = useState({ x: 0, y: 0 })
@@ -47,18 +54,24 @@ export function Game2Joystick({ onMove, disabled = false, className }: Game2Joys
       const centerX = rect.left + rect.width / 2
       const centerY = rect.top + rect.height / 2
       const dx = clientX - centerX
-      const dy = clientY - centerY
+      const dy = horizontalOnly ? 0 : clientY - centerY
       const dist = Math.hypot(dx, dy)
       const travel = dist > 0 ? Math.min(dist, maxTravel) : 0
       const ratio = dist > 0 ? travel / dist : 0
 
       setKnobOffset({ x: dx * ratio, y: dy * ratio })
 
-      const direction = vectorToGame2Direction(dx, dy, deadZone)
+      const direction = horizontalOnly
+        ? Math.abs(dx) < deadZone
+          ? null
+          : dx > 0
+            ? 'right'
+            : 'left'
+        : vectorToGame2Direction(dx, dy, deadZone)
       if (direction) startRepeat(direction)
       else stopRepeat()
     },
-    [disabled, startRepeat, stopRepeat],
+    [disabled, horizontalOnly, startRepeat, stopRepeat],
   )
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {

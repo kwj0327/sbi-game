@@ -4,7 +4,11 @@ import {
   GAME2_CLAW_POSE,
   GAME2_STAGE,
 } from '../../game/game2Config'
-import { getClawRenderFromPlayPosition, getDefaultGame2ClawState } from '../../game/game2PlayArea'
+import {
+  getClawRenderFromPlayPosition,
+  getDefaultGame2ClawState,
+  type Game2ClawRender,
+} from '../../game/game2PlayArea'
 
 type Game2ClawProps = {
   claw?: Partial<Game2ClawState>
@@ -14,6 +18,11 @@ type Game2ClawProps = {
     faceScaleX: number
     depthScale: number
   } | null
+  renderOverride?: Game2ClawRender
+  /** CSS 변수 오버라이드 (Game3 등에서 레일·케이블 조정) */
+  varOverrides?: Record<string, string | number>
+  /** playfield y%/x% → rig 오프셋 변환 (기본 Game2 stage 비율) */
+  playfieldAspectHOverW?: number
 }
 
 type ClawPose = { [K in keyof typeof GAME2_CLAW_POSE.open]: number }
@@ -35,7 +44,13 @@ function lerpClawPose(gripT: number): ClawPose {
   }
 }
 
-export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
+export function Game2Claw({
+  claw,
+  heldDoll = null,
+  renderOverride,
+  varOverrides,
+  playfieldAspectHOverW,
+}: Game2ClawProps) {
   const defaults = getDefaultGame2ClawState()
   const xPercent = claw?.xPercent ?? defaults.xPercent
   const playY = claw?.playY ?? defaults.playY
@@ -46,13 +61,15 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
   const clawLiftPercent = claw?.clawLiftPercent ?? defaults.clawLiftPercent
   const pose = open ? GAME2_CLAW_POSE.open : lerpClawPose(gripT)
 
-  const render = getClawRenderFromPlayPosition(
-    { x: xPercent, y: playY },
-    {
-      descendT,
-      liftPercent: phase === 'idle' ? 0 : clawLiftPercent,
-    },
-  )
+  const render =
+    renderOverride ??
+    getClawRenderFromPlayPosition(
+      { x: xPercent, y: playY },
+      {
+        descendT,
+        liftPercent: phase === 'idle' ? 0 : clawLiftPercent,
+      },
+    )
 
   // 잡은 지점 보존 — playfield % 오프셋을 rig 로컬 %로 변환 (rig는 depthScale로 스케일됨)
   const heldOffsetX = claw?.heldOffsetX ?? defaults.heldOffsetX
@@ -60,8 +77,10 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
   const rigAspect = 380 / 319
   const rigOffXPercent =
     (heldOffsetX * 100) / (render.rigWidthPercent * render.depthScale)
+  const aspectHOverW =
+    playfieldAspectHOverW ?? GAME2_STAGE.viewHeight / GAME2_STAGE.viewWidth
   const rigOffYPercent =
-    (heldOffsetY * (GAME2_STAGE.viewHeight / GAME2_STAGE.viewWidth) * 100) /
+    (heldOffsetY * aspectHOverW * 100) /
     (render.rigWidthPercent * rigAspect * render.depthScale)
   // 바닥 인형과 집게의 depth 스케일 차이 보정 (크기 점프 방지)
   const heldScaleFix = heldDoll ? heldDoll.depthScale / render.depthScale : 1
@@ -93,6 +112,7 @@ export function Game2Claw({ claw, heldDoll = null }: Game2ClawProps) {
         ['--g2-tip-l' as string]: `${pose.tipShiftLeft}%`,
         ['--g2-tip-r' as string]: `${pose.tipShiftRight}%`,
         ['--g2-joint-top' as string]: `${pose.jointTop}%`,
+        ...varOverrides,
       }}
       aria-hidden="true"
     >
