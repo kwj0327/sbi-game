@@ -6,37 +6,28 @@
   pointer-events: none;
 }
 
+/* 2D 수직 낙하 — 매달린 중심에서 중력처럼 가속(ease-in)하며 곧장 아래로 */
 .g3-dolls__item--falling {
-  animation: g3-doll-fall-to-chute var(--g3-fall-duration, 1.2s) cubic-bezier(0.33, 0.82, 0.4, 1)
+  transform-origin: center center;
+  animation: g3-doll-fall-down var(--g3-fall-duration, 0.7s) cubic-bezier(0.55, 0, 0.85, 1)
     forwards;
 }
 
-@keyframes g3-doll-fall-to-chute {
+@keyframes g3-doll-fall-down {
   0% {
-    transform: translateX(-50%)
-      scale(calc(var(--g3-doll-face-x, 1)), 1)
+    transform: translate(-50%, -50%)
+      scaleX(var(--g3-doll-face-x, 1))
       rotate(var(--g3-doll-rotate, 0deg));
     opacity: 1;
   }
 
-  92% {
-    transform: translate3d(
-        calc(-50% + var(--fall-to-center-x, 0px)),
-        var(--fall-to-chute-y, 96px),
-        0
-      )
-      scale(calc(var(--g3-doll-face-x, 1) * var(--g3-fall-scale-end, 0.42)), 1)
-      rotate(var(--g3-doll-rotate, 0deg));
+  85% {
     opacity: 1;
   }
 
   100% {
-    transform: translate3d(
-        calc(-50% + var(--fall-to-center-x, 0px)),
-        var(--fall-to-chute-y, 96px),
-        0
-      )
-      scale(calc(var(--g3-doll-face-x, 1) * var(--g3-fall-scale-end, 0.42)), 1)
+    transform: translate3d(-50%, calc(-50% + var(--fall-to-chute-y, 96px)), 0)
+      scaleX(var(--g3-doll-face-x, 1))
       rotate(var(--g3-doll-rotate, 0deg));
     opacity: 0;
   }

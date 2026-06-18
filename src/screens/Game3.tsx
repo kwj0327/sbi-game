@@ -5,7 +5,7 @@ import { GameFooterBar } from '../components/GameFooterBar'
 import { ClawGameSuccessPopup } from '../components/claw-game/ClawGameSuccessPopup'
 import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
-import { Game3Viewport } from '../components/game3/Game3Viewport'
+import { Game3Viewport, type Game3ViewportHandle } from '../components/game3/Game3Viewport'
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { ALL_DOLL_IMAGES } from '../game/dollConfig'
@@ -74,6 +74,7 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
   dollsRef.current = dolls
   const returnOriginXRef = useRef<number | null>(null)
   const homewardOriginXRef = useRef<number | null>(null)
+  const viewportRef = useRef<Game3ViewportHandle>(null)
 
   const controlsLocked = isGame3ClawMovementLocked(claw) || successDollImage !== null
 
@@ -164,7 +165,10 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     const { closeDurationMs, holdAtBottomMs } = GAME3_CLAW
     const heldId = clawRef.current.heldDollId
     const heldDoll = heldId !== null ? getGame3DollById(dollsRef.current, heldId) : null
-    const targetGripT = heldDoll ? getGame3GripTForDoll(heldDoll) : 0
+    // 인형 테두리에 맞추되, 집게가 항상 눈에 띄게 닫히도록 상한을 둔다
+    const targetGripT = heldDoll
+      ? Math.min(getGame3GripTForDoll(heldDoll), GAME3_CLAW.maxGrabGripT)
+      : 0
     let frame = 0
     let holdTimer: number | null = null
 
@@ -308,15 +312,19 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     const timeout = window.setTimeout(() => {
       const heldId = clawRef.current.heldDollId
       if (heldId !== null) {
+        // 매달린 인형의 실제 화면 위치를 측정해 그 자리에서 곧장 떨어지게 한다
+        const measured = viewportRef.current?.measureHeldDoll() ?? null
         const release = getGame3HeldDollReleasePoint(clawRef.current)
+        const fallX = measured?.xPercent ?? release.xPercent
+        const fallCenterY = measured?.centerYPercent ?? release.visualY
         setDolls((prev) =>
           prev.map((doll) =>
             doll.id === heldId
               ? {
                   ...doll,
                   falling: true,
-                  xPercent: release.xPercent,
-                  fallReleaseVisualY: release.visualY,
+                  xPercent: fallX,
+                  fallReleaseVisualY: fallCenterY,
                 }
               : doll,
           ),
@@ -482,7 +490,7 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
           <Game2InstructionBar
             message={playNotice || getStatusMessage(claw.phase, claw.heldDollId !== null)}
           />
-          <Game3Viewport claw={claw} dolls={dolls} />
+          <Game3Viewport ref={viewportRef} claw={claw} dolls={dolls} />
         </div>
       </MobileLayout>
 

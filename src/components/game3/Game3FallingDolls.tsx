@@ -29,7 +29,7 @@ export function Game3FallingDolls({
 
   if (falling.length === 0) return null
 
-  const { fallDurationMs, scaleEnd } = GAME3_CHUTE_FALL
+  const { fallDurationMs } = GAME3_CHUTE_FALL
 
   return (
     <div
@@ -40,18 +40,12 @@ export function Game3FallingDolls({
       aria-hidden="true"
     >
       {falling.map((doll) => {
-        const startY = doll.fallReleaseVisualY ?? 0
+        const startCenterY = doll.fallReleaseVisualY ?? 0
 
         if (!fallCacheRef.current.has(doll.id)) {
           fallCacheRef.current.set(
             doll.id,
-            computeGame3FallToChute(
-              playfieldW,
-              playfieldH,
-              doll.xPercent,
-              startY,
-              stageScale,
-            ),
+            computeGame3FallToChute(playfieldW, playfieldH, startCenterY, stageScale),
           )
         }
 
@@ -63,12 +57,10 @@ export function Game3FallingDolls({
             className="g3-dolls__item g3-dolls__item--falling"
             style={{
               left: `${doll.xPercent}%`,
-              bottom: `${100 - startY}%`,
+              top: `${startCenterY}%`,
               ['--g3-doll-rotate' as string]: `${doll.rotateDeg}deg`,
               ['--g3-doll-face-x' as string]: `${doll.faceScaleX}`,
-              ['--fall-to-center-x' as string]: `${fall.fallToCenterX}px`,
               ['--fall-to-chute-y' as string]: `${fall.fallToChuteY}px`,
-              ['--g3-fall-scale-end' as string]: `${scaleEnd}`,
             }}
           >
             <img src={doll.imageSrc} alt="" className="g3-doll-sprite" draggable={false} />

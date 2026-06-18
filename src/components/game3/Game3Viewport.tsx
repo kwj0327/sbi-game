@@ -1,4 +1,12 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import game3RoomBackground from '../../assets/game3-room-background.png'
 import type { Game2ClawState } from '../../game/game2Config'
 import { GAME3_CLAW, GAME3_CHUTE, GAME3_DOLLS, GAME3_GUIDE, GAME3_WORLD } from '../../game/game3Config'
@@ -15,14 +23,41 @@ import { Game3Dolls } from './Game3Dolls'
 import { Game3FallingDolls } from './Game3FallingDolls'
 import './game3-viewport.css'
 
+export type Game3HeldDollMeasure = {
+  xPercent: number
+  centerYPercent: number
+}
+
+export type Game3ViewportHandle = {
+  /** 매달린 인형의 실제 화면 위치(world %) — 낙하 시작점 */
+  measureHeldDoll: () => Game3HeldDollMeasure | null
+}
+
 type Game3ViewportProps = {
   claw: Game2ClawState
   dolls: readonly Game3DollState[]
 }
 
-export function Game3Viewport({ claw, dolls }: Game3ViewportProps) {
+export const Game3Viewport = forwardRef<Game3ViewportHandle, Game3ViewportProps>(
+  function Game3Viewport({ claw, dolls }, ref) {
   const viewportRef = useRef<HTMLDivElement>(null)
+  const playfieldRef = useRef<HTMLDivElement>(null)
   const [metrics, setMetrics] = useState({ viewportW: 0, viewportH: 0, scale: 1 })
+
+  useImperativeHandle(ref, () => ({
+    measureHeldDoll() {
+      const field = playfieldRef.current
+      const img = field?.querySelector<HTMLElement>('.g2-claw__held-doll img')
+      if (!field || !img) return null
+      const f = field.getBoundingClientRect()
+      const r = img.getBoundingClientRect()
+      if (f.width <= 0 || f.height <= 0) return null
+      return {
+        xPercent: ((r.left + r.width / 2 - f.left) / f.width) * 100,
+        centerYPercent: ((r.top + r.height / 2 - f.top) / f.height) * 100,
+      }
+    },
+  }))
 
   const updateMetrics = useCallback(() => {
     const viewport = viewportRef.current
@@ -67,6 +102,7 @@ export function Game3Viewport({ claw, dolls }: Game3ViewportProps) {
           height: `${metrics.viewportH}px`,
           transform: `translateX(${-scrollLeftPx}px)`,
           ['--g3-stage-scale' as string]: `${metrics.scale}`,
+          ['--g3-rig-visual-scale' as string]: `${GAME3_CLAW.rigVisualScale}`,
           ['--g3-doll-size' as string]: `${GAME3_DOLLS.emojiSizePx}px`,
         }}
       >
@@ -77,7 +113,7 @@ export function Game3Viewport({ claw, dolls }: Game3ViewportProps) {
           draggable={false}
         />
 
-        <div className="g3-world__playfield">
+        <div className="g3-world__playfield" ref={playfieldRef}>
           <div
             className="g3-chute-zone"
             style={{
@@ -119,6 +155,13 @@ export function Game3Viewport({ claw, dolls }: Game3ViewportProps) {
               '--g2-cable-visual-extend': '0%',
               '--g2-cable-width': 'calc(7px * var(--g3-stage-scale, 1))',
               '--g2-doll-size': `${GAME3_DOLLS.emojiSizePx}px`,
+              // 벌린 상태일 때만 다리(아랫팔) 각도를 덜 몰리게 조정 (잡기 애니메이션은 그대로)
+              ...(claw.open
+                ? {
+                    '--g2-lower-l': `${-GAME3_CLAW.idleLowerArmDeg}deg`,
+                    '--g2-lower-r': `${GAME3_CLAW.idleLowerArmDeg}deg`,
+                  }
+                : {}),
             }}
             heldDoll={
               carryOnClaw && heldDoll
@@ -135,4 +178,5 @@ export function Game3Viewport({ claw, dolls }: Game3ViewportProps) {
       </div>
     </div>
   )
-}
+  },
+)

@@ -39,7 +39,7 @@
 /* Game2Claw — 2D world 좌표계, 크기 축소 */
 .g3-world__playfield .g2-claw {
   --g2-claw-rail-y: 0%;
-  --g2-stage-scale: calc(var(--g3-stage-scale, 1) * 0.32);
+  --g2-stage-scale: calc(var(--g3-stage-scale, 1) * var(--g3-rig-visual-scale, 0.32));
   will-change: transform;
 }
 
@@ -47,6 +47,26 @@
 .g3-world__playfield .g2-claw__cable,
 .g3-world__playfield .g2-claw__rig {
   transition: left 0.1s linear;
+}
+
+/* 🔴🟢 디버그 — 집게 경계 시각화
+   몸통: .g2-claw__body (초록)
+   다리(양쪽 각 2부품): 관절 기준
+     · .g2-claw__arm-upper — 어깨(윗팔) 한 쌍
+     · .g2-claw__arm-lower — 다리(아랫팔) 한 쌍 */
+.g3-world__playfield .g2-claw__arm-upper {
+  outline: 4px dashed #ff2d2d;
+  outline-offset: -2px;
+}
+
+.g3-world__playfield .g2-claw__arm-lower {
+  outline: 4px dashed #ff2d2d;
+  outline-offset: -2px;
+}
+
+.g3-world__playfield .g2-claw__body {
+  outline: 4px dashed #22c55e;
+  outline-offset: -2px;
 }
 
 .g3-world__playfield .g2-stage__playfield {

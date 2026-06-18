@@ -13,24 +13,29 @@ export const GAME3_WORLD = {
 } as const
 
 export const GAME3_CLAW = {
-  defaultX: 50,
+  /** 집게 기본 위치 — 배출구(선물상자) 중심 (world %) */
+  defaultX: 15,
   /** world 가로 이동량 (%) */
   moveStepX: 3,
   moveRepeatMs: 80,
-  /** 집게 좌우 이동 한계 (world %) */
-  minX: 6,
+  /** 집게 좌우 이동 한계 (world %) — 왼쪽은 디폴트(배출구) 위치까지만 */
+  minX: 15,
   maxX: 94,
   /** 2D — 깊이 고정 (집게가 내려가 멈추는 바닥 높이) */
   playY: GAME3_WORLD.floorY - 4,
   descendDurationMs: 900,
   /** 바닥에서 집게 오므리는 시간 (ms) */
-  closeDurationMs: 300,
+  closeDurationMs: 360,
   holdAtBottomMs: 500,
   ascendDurationMs: 900,
+  /** 잡을 때 집게가 닫히는 최대 정도 (0=완전 닫힘 … 1=벌림). 작을수록 더 많이 닫힘 */
+  maxGrabGripT: 0.4,
+  /** 평상시(벌린 상태) 아랫팔(다리) 각도 — 90=수직, 90보다 크면 안쪽으로 살짝 몰림 */
+  idleLowerArmDeg: 95,
   /** 평상시 집게를 화면 위로 띄우는 양 (클수록 높이 매달림, world %) */
   cableVisualLift: 78,
   /** Game2 대비 집게 rig 시각 크기 (0–1) */
-  rigVisualScale: 0.32,
+  rigVisualScale: 0.54,
   /** 상승 후 배출구(선물상자) 중심으로 이동 (ms) */
   returnToChuteDurationMs: 2200,
   /** 배출구 도착 후 집게를 벌리기까지 대기 (ms) */
@@ -41,12 +46,11 @@ export const GAME3_CLAW = {
   returnToHomeDurationMs: 2000,
 } as const
 
-/** 배출구 낙하 연출 */
+/** 배출구 낙하 연출 — 2D 수직 낙하 */
 export const GAME3_CHUTE_FALL = {
-  fallDurationMs: 1200,
+  fallDurationMs: 650,
   holdMs: 0,
   fadeMs: 0,
-  scaleEnd: 0.42,
 } as const
 
 export function getGame3ChuteFallSequenceMs() {
