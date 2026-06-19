@@ -29,8 +29,9 @@
   object-fit: contain;
 }
 
-/* 디버그 — 알파 실루엣(인형별 인식 영역). 인형 뒤에 살짝 큰 마스크로 윤곽만 표시 */
+/* 디버그 — 알파 실루엣(인형별 인식 영역). GAME3_DEV_OVERLAYS=true 일 때만 표시 */
 .g3-doll-silhouette {
+  display: none;
   position: absolute;
   inset: -3px;
   z-index: 0;

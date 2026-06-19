@@ -43,6 +43,17 @@ import character42 from '../assets/characters/character-42.png'
 import character43 from '../assets/characters/character-43.png'
 import character44 from '../assets/characters/character-44.png'
 import character45 from '../assets/characters/character-45.png'
+import character46 from '../assets/characters/character-46.png'
+import character47 from '../assets/characters/character-47.png'
+import character48 from '../assets/characters/character-48.png'
+import character49 from '../assets/characters/character-49.png'
+import character50 from '../assets/characters/character-50.png'
+import character51 from '../assets/characters/character-51.png'
+import character52 from '../assets/characters/character-52.png'
+import character53 from '../assets/characters/character-53.png'
+import character54 from '../assets/characters/character-54.png'
+import character55 from '../assets/characters/character-55.png'
+import character56 from '../assets/characters/character-56.png'
 
 export const CHARACTER_IMAGES = [
   character01,
@@ -90,54 +101,17 @@ export const CHARACTER_IMAGES = [
   character43,
   character44,
   character45,
-] as const
-
-export const CHARACTER_NAMES = [
-  '마이멜로디',
-  '폼폼푸린',
-  '쿠로미',
-  '헬로키티',
-  '포차코',
-  '바츠마루',
-  '짱구',
-  '한교돈',
-  '키키&라라',
-  '시나모롤',
-  '도라에몽',
-  '케로피',
-  '토토로',
-  '헬로키티(여름)',
-  '짱구(코스튬)',
-  '비버',
-  '흰둥이',
-  '비버(왕관)',
-  '타마마',
-  '주먹밥',
-  '라부부',
-  '베어가방',
-  '리락쿠마',
-  '분홍토끼',
-  '메타몽',
-  '맹구',
-  '도레미',
-  '소방관',
-  '액션가면',
-  '초롱이',
-  '주먹밥(김)',
-  '라부부(회)',
-  '베어가방2',
-  '케로로',
-  '짱구(잠옷)',
-  '파랑고양이',
-  '라이언(춘식)',
-  '커비',
-  '슬라임',
-  '펠트토끼',
-  '카피바라',
-  '코리락쿠마',
-  '쿠루루',
-  '테리몬',
-  '그로밋',
+  character46,
+  character47,
+  character48,
+  character49,
+  character50,
+  character51,
+  character52,
+  character53,
+  character54,
+  character55,
+  character56,
 ] as const
 
 export const CHARACTER_COUNT = CHARACTER_IMAGES.length

@@ -2,10 +2,11 @@ import './claw-game-success-popup.css'
 
 type ClawGameSuccessPopupProps = {
   imageSrc: string
+  dollName: string
   onConfirm: () => void
 }
 
-export function ClawGameSuccessPopup({ imageSrc, onConfirm }: ClawGameSuccessPopupProps) {
+export function ClawGameSuccessPopup({ imageSrc, dollName, onConfirm }: ClawGameSuccessPopupProps) {
   return (
     <div className="claw-game-success-popup" role="presentation">
       <button
@@ -23,7 +24,7 @@ export function ClawGameSuccessPopup({ imageSrc, onConfirm }: ClawGameSuccessPop
         <p id="claw-game-success-title" className="claw-game-success-popup__title">
           성공!
         </p>
-        <p className="claw-game-success-popup__subtitle">인형을 뽑았어요</p>
+        <p className="claw-game-success-popup__subtitle">{dollName} 인형을 뽑았어요!</p>
         <div className="claw-game-success-popup__doll-wrap">
           <img
             src={imageSrc}

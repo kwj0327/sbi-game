@@ -3,7 +3,6 @@ import type { Game2ClawRender } from './game2PlayArea'
 import {
   resolveGame3DescentStop,
   getGame3ClawHitboxes,
-  getGame3ClawTipInnerXPercent,
   getGame3LowerLegRects,
   type Game3Rect,
 } from './game3ClawCollision'
@@ -14,6 +13,12 @@ import {
   getDollSilhouetteTopV,
   sampleDollAlpha,
 } from './dollAlphaMask'
+import {
+  evaluateGame3GripGrasp,
+  partInvadesDollSilhouette,
+  partTouchesDollSilhouette,
+  type Game3BoundaryRect,
+} from './game3Boundary'
 import {
   GAME3_CLAW,
   GAME3_DOLLS,
@@ -525,75 +530,6 @@ export type Game3GripTSplit = {
   right: number
 }
 
-/** 접촉 행에서 인형 실루엣 좌·우 가장자리 (world %) */
-function measureGame3GrabSilhouetteXBounds(
-  clawXPercent: number,
-  contactYPercent: number,
-  doll: Game3DollState,
-): { leftX: number; rightX: number } | null {
-  const mask = getDollAlphaMask(doll.imageSrc)
-  if (!mask) return null
-
-  const worldWidthPx = GAME3_WORLD.width * GAME3_WORLD.widthScale
-  const halfRangePx = Math.max(GAME3_DOLLS.emojiSizePx * 0.45, getGame3ClawRigWidthPx() * 0.55)
-  const dyOffsetsPct = [0, -0.4, 0.4]
-
-  let leftX: number | null = null
-  let rightX: number | null = null
-
-  for (const dyPct of dyOffsetsPct) {
-    const y = contactYPercent + dyPct
-    for (let dx = -halfRangePx; dx <= halfRangePx; dx += 1) {
-      const x = clawXPercent + (dx / worldWidthPx) * 100
-      const uv = worldPointToGame3DollUV(x, y, doll)
-      if (!uv) continue
-      if (sampleDollAlpha(mask, uv.u, uv.v) >= DOLL_ALPHA_THRESHOLD) {
-        if (leftX === null || x < leftX) leftX = x
-        if (rightX === null || x > rightX) rightX = x
-      }
-    }
-  }
-
-  if (leftX === null || rightX === null || rightX <= leftX) return null
-  return { leftX, rightX }
-}
-
-function solveGame3GripTForTipTarget(
-  side: 'left' | 'right',
-  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
-  targetInnerX: number,
-): number {
-  const lift = claw.clawLiftPercent ?? 0
-  const openTips = getGame3ClawTipInnerXPercent(claw.xPercent, lift, 1, 1)
-  const closedTips = getGame3ClawTipInnerXPercent(claw.xPercent, lift, 0, 0)
-
-  if (side === 'left') {
-    if (targetInnerX <= openTips.left) return 1
-    if (targetInnerX >= closedTips.left) return 0
-    let lo = 0
-    let hi = 1
-    for (let i = 0; i < 24; i += 1) {
-      const mid = (lo + hi) / 2
-      const tips = getGame3ClawTipInnerXPercent(claw.xPercent, lift, mid, 1)
-      if (tips.left < targetInnerX) lo = mid
-      else hi = mid
-    }
-    return (lo + hi) / 2
-  }
-
-  if (targetInnerX >= openTips.right) return 1
-  if (targetInnerX <= closedTips.right) return 0
-  let lo = 0
-  let hi = 1
-  for (let i = 0; i < 24; i += 1) {
-    const mid = (lo + hi) / 2
-    const tips = getGame3ClawTipInnerXPercent(claw.xPercent, lift, 1, mid)
-    if (tips.right > targetInnerX) lo = mid
-    else hi = mid
-  }
-  return (lo + hi) / 2
-}
-
 /**
  * 다리(아랫팔) 박스 영역 안에 인형 실루엣(불투명 픽셀)이 있는지 — 빨강 점선 ↔ 흰 윤곽 기준.
  * 박스 안을 격자로 훑어 한 점이라도 불투명하면 닿은 것으로 본다.
@@ -624,73 +560,260 @@ function legBoxTouchesDollSilhouette(box: Game3Rect, doll: Game3DollState): bool
   return boxTouchesDollSilhouette(box, doll, 5, 6)
 }
 
-/**
- * 한쪽 다리를 벌림(1)→닫힘(0)으로 닫으며, 그 다리 박스가 인형 실루엣에 처음 닿는 gripT를 찾는다.
- * 닿은 뒤 살짝 더 파고들어(squeeze) 단단히 쥔다. 끝까지 안 닿으면 완전히 닫는다(0).
- * 좌·우를 따로 풀므로 인형이 치우치거나 좌우 폭이 다르면 서로 다른 양만큼 닫힌다.
- */
-function solveGame3LegGripT(
-  side: 'left' | 'right',
-  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
-  doll: Game3DollState,
-): number | null {
-  const mask = getDollAlphaMask(doll.imageSrc)
-  if (!mask) return null
-
-  const lift = claw.clawLiftPercent ?? 0
-  const STEPS = 60
-  /** 닿은 뒤 추가로 더 닫아 파고드는 양 (gripT) */
-  const squeezeT = 0.05
-
-  const legTouches = (gt: number): boolean => {
-    const legs = getGame3LowerLegRects(
-      claw.xPercent,
-      lift,
-      side === 'left' ? gt : 1,
-      side === 'right' ? gt : 1,
-    )
-    const box = side === 'left' ? legs.left : legs.right
-    return legBoxTouchesDollSilhouette(box, doll)
+function dollToBoundaryRect(doll: Game3DollState): Game3BoundaryRect {
+  const halfW = getGame3DollWidthPercent(doll.rotateDeg) / 2
+  const halfH = getGame3DollHeightPercent() / 2
+  const centerY = getGame3DollCenterY(doll.stackLevel)
+  return {
+    left: doll.xPercent - halfW,
+    right: doll.xPercent + halfW,
+    top: centerY - halfH,
+    bottom: centerY + halfH,
   }
-
-  for (let i = 0; i <= STEPS; i += 1) {
-    const gt = 1 - i / STEPS // 벌림(1) → 닫힘(0)
-    if (legTouches(gt)) {
-      return clamp(gt - squeezeT, 0, 1)
-    }
-  }
-
-  // 끝까지 안 닿음 — 완전히 닫아 감싼다
-  return 0
 }
 
-/** 좌·우 다리 독립 — 각 다리가 인형 실루엣에 닿을 때까지 따로 오므리는 gripT */
+function rectToBoundary(box: Game3Rect): Game3BoundaryRect {
+  return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }
+}
+
+function dollFlipX(doll: Game3DollState): boolean {
+  return doll.faceScaleX === -1
+}
+
+/** 집게(몸통·어깨·다리)가 인형 실루엣을 침범하는지 — 하강·닫기 공통 */
+export function clawInvadesAnyDollAt(
+  xPercent: number,
+  lift: number,
+  dolls: readonly Game3DollState[],
+): boolean {
+  const boxes = getGame3ClawHitboxes(xPercent, lift)
+  const parts: { box: Game3Rect; kind: 'body' | 'limb' }[] = [
+    { box: boxes.body, kind: 'body' },
+    { box: boxes.leftUpper, kind: 'limb' },
+    { box: boxes.leftLower, kind: 'limb' },
+    { box: boxes.rightUpper, kind: 'limb' },
+    { box: boxes.rightLower, kind: 'limb' },
+  ]
+
+  return dolls.some((doll) => {
+    if (doll.captured || doll.falling) return false
+    const dollRect = dollToBoundaryRect(doll)
+    const flip = dollFlipX(doll)
+    return parts.some(({ box, kind }) =>
+      partInvadesDollSilhouette(
+        rectToBoundary(box),
+        dollRect,
+        doll.imageSrc,
+        flip,
+        kind,
+      ),
+    )
+  })
+}
+
+/** 더 내려가면 침범하는지 (현재 위치는 안전하다고 가정) */
+export function wouldGame3ClawInvadeIfLower(
+  xPercent: number,
+  currentLift: number,
+  deltaLift: number,
+  dolls: readonly Game3DollState[],
+  floorLift: number,
+): boolean {
+  const nextLift = Math.max(floorLift, currentLift - Math.max(0, deltaLift))
+  if (nextLift >= currentLift - 1e-6) return false
+  return clawInvadesAnyDollAt(xPercent, nextLift, dolls)
+}
+
+export type Game3CloseSimContext = {
+  leftStopped: boolean
+  rightStopped: boolean
+}
+
+export function createGame3CloseSimContext(): Game3CloseSimContext {
+  return { leftStopped: false, rightStopped: false }
+}
+
+function limbBlockedAtGripT(
+  side: 'left' | 'right',
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  gripTLeft: number,
+  gripTRight: number,
+  dolls: readonly Game3DollState[],
+): boolean {
+  const lift = claw.clawLiftPercent ?? 0
+  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
+  const lowerBox = side === 'left' ? legs.left : legs.right
+  const part = rectToBoundary(lowerBox)
+
+  const otherLegs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
+  const otherPart = rectToBoundary(
+    side === 'left' ? otherLegs.right : otherLegs.left,
+  )
+
+  return dolls.some((doll) => {
+    if (doll.captured || doll.falling) return false
+    const dollRect = dollToBoundaryRect(doll)
+    if (!partTouchesDollSilhouette(part, dollRect, doll.imageSrc, dollFlipX(doll))) {
+      return false
+    }
+
+    const otherTouches = partTouchesDollSilhouette(
+      otherPart,
+      dollRect,
+      doll.imageSrc,
+      dollFlipX(doll),
+    )
+    // 양쪽 다리가 같은 인형에 닿으면 감싸기 — 닫기 계속
+    if (otherTouches) return false
+
+    return partInvadesDollSilhouette(part, dollRect, doll.imageSrc, dollFlipX(doll), 'limb')
+  })
+}
+
+function findLastSafeLegGripT(
+  side: 'left' | 'right',
+  penetratesGt: number,
+  safeGt: number,
+  otherGt: number,
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  dolls: readonly Game3DollState[],
+): number {
+  let lo = Math.min(penetratesGt, safeGt)
+  let hi = Math.max(penetratesGt, safeGt)
+  for (let i = 0; i < 14; i += 1) {
+    const mid = (lo + hi) / 2
+    const testLeft = side === 'left' ? mid : otherGt
+    const testRight = side === 'right' ? mid : otherGt
+    if (limbBlockedAtGripT(side, claw, testLeft, testRight, dolls)) lo = mid
+    else hi = mid
+  }
+  return hi
+}
+
+function stepGame3LegGripT(
+  side: 'left' | 'right',
+  currentGt: number,
+  otherGt: number,
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  dolls: readonly Game3DollState[],
+  closeRate: number,
+  stopped: boolean,
+): { gt: number; stopped: boolean } {
+  if (stopped || currentGt <= 0) return { gt: currentGt, stopped: true }
+
+  if (limbBlockedAtGripT(side, claw, currentGt, otherGt, dolls)) {
+    const opened = findLastSafeLegGripT(side, currentGt, 1, otherGt, claw, dolls)
+    return { gt: opened, stopped: true }
+  }
+
+  const nextGt = Math.max(0, currentGt - closeRate)
+  if (!limbBlockedAtGripT(side, claw, nextGt, otherGt, dolls)) {
+    return { gt: nextGt, stopped: nextGt <= 0 }
+  }
+
+  const safeGt = findLastSafeLegGripT(side, nextGt, currentGt, otherGt, claw, dolls)
+  return { gt: safeGt, stopped: true }
+}
+
+/**
+ * Game2 stepClawClose와 같이 — 사전 목표 각도 없이 매 프레임 좌·우 다리를 따로 닫는다.
+ * 인형 실루엣에 닿으면 그 다리는 더 이상 관통하지 않는 선에서 멈춘다.
+ */
+export function stepGame3ClawCloseSplit(
+  claw: {
+    xPercent: number
+    clawLiftPercent: number
+    gripTLeft: number
+    gripTRight: number
+  },
+  dolls: readonly Game3DollState[],
+  dtMs: number,
+  ctx: Game3CloseSimContext,
+): {
+  gripTLeft: number
+  gripTRight: number
+  done: boolean
+} {
+  const closeRate = dtMs / GAME3_CLAW.closeDurationMs
+  let gripTLeft = claw.gripTLeft
+  let gripTRight = claw.gripTRight
+
+  const clawPose = {
+    xPercent: claw.xPercent,
+    clawLiftPercent: claw.clawLiftPercent,
+  }
+
+  const leftStep = stepGame3LegGripT(
+    'left',
+    gripTLeft,
+    gripTRight,
+    clawPose,
+    dolls,
+    closeRate,
+    ctx.leftStopped,
+  )
+  gripTLeft = leftStep.gt
+  ctx.leftStopped = leftStep.stopped
+
+  const rightStep = stepGame3LegGripT(
+    'right',
+    gripTRight,
+    gripTLeft,
+    clawPose,
+    dolls,
+    closeRate,
+    ctx.rightStopped,
+  )
+  gripTRight = rightStep.gt
+  ctx.rightStopped = rightStep.stopped
+
+  return {
+    gripTLeft,
+    gripTRight,
+    done: ctx.leftStopped && ctx.rightStopped,
+  }
+}
+
+/** 닫힌 상태에서 발 사이에 걸린 인형 id (하강 후보 우선) */
+export function findGame3HookedDollId(
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  gripTLeft: number,
+  gripTRight: number,
+  dolls: readonly Game3DollState[],
+  preferredId: number | null,
+): number | null {
+  const isHooked = (doll: Game3DollState) =>
+    doesGame3GripGraspDoll(claw, gripTLeft, gripTRight, doll)
+
+  if (preferredId !== null) {
+    const preferred = getGame3DollById(dolls, preferredId)
+    if (preferred && isHooked(preferred)) return preferredId
+  }
+
+  let bestId: number | null = null
+  let bestDist = Number.POSITIVE_INFINITY
+  for (const doll of dolls) {
+    if (doll.captured || doll.falling) continue
+    if (Math.abs(doll.xPercent - claw.xPercent) > GAME3_DOLLS.grabRadiusX * 1.25) {
+      continue
+    }
+    if (!isHooked(doll)) continue
+    const dist = Math.abs(doll.xPercent - claw.xPercent)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestId = doll.id
+    }
+  }
+  return bestId
+}
+
+/** @deprecated stepGame3ClawCloseSplit — 프레임 단위 접촉 닫기 사용 */
 export function getGame3GripTForDollSplit(
   doll: Game3DollState,
   claw: Pick<Game2ClawState, 'xPercent' | 'descendT' | 'clawLiftPercent'>,
 ): Game3GripTSplit {
-  const left = solveGame3LegGripT('left', claw, doll)
-  const right = solveGame3LegGripT('right', claw, doll)
-
-  if (left !== null && right !== null) {
-    return { left, right }
-  }
-
-  // 마스크 미로드 등 — 실루엣 가장자리 기반 폴백
-  const contactY = getGame3GrabContactY(claw, doll)
-  const bounds = measureGame3GrabSilhouetteXBounds(claw.xPercent, contactY, doll)
-  if (!bounds) {
-    const symmetric = getGame3GripTForDoll(doll, claw)
-    return { left: symmetric, right: symmetric }
-  }
-
-  const worldWidthPx = GAME3_WORLD.width * GAME3_WORLD.widthScale
-  const squeezeHalfPct = ((GAME3_DOLLS.gripSqueezePx / 2) / worldWidthPx) * 100
-  return {
-    left: left ?? solveGame3GripTForTipTarget('left', claw, bounds.leftX + squeezeHalfPct),
-    right:
-      right ?? solveGame3GripTForTipTarget('right', claw, bounds.rightX - squeezeHalfPct),
-  }
+  const symmetric = getGame3GripTForDoll(doll, claw)
+  return { left: symmetric, right: symmetric }
 }
 
 /** 임의 사각형(world %)이 인형 실루엣과 겹치는지 — body 등 범용 */
@@ -703,14 +826,24 @@ export function getGame3DescentFloorLift(clawXPercent: number): number {
   return resolveGame3DescentStop(clawXPercent, []).clawLiftPercent
 }
 
-/** 몸통(초록)이 인형 실루엣을 뚫지 않도록, 겹치기 직전(경계 접촉)에서 멈추는 가장 깊은 lift */
-function bodyOverlapsAnyDoll(
+/** 몸통(초록)이 인형 실루엣을 침범하지 않는 가장 깊은 lift */
+function bodyInvadesAnyDoll(
   clawXPercent: number,
   lift: number,
   dolls: readonly Game3DollState[],
 ): boolean {
   const boxes = getGame3ClawHitboxes(clawXPercent, lift)
-  return dolls.some((doll) => boxTouchesDollSilhouette(boxes.body, doll, 10, 8))
+  const body = rectToBoundary(boxes.body)
+  return dolls.some((doll) => {
+    if (doll.captured || doll.falling) return false
+    return partInvadesDollSilhouette(
+      body,
+      dollToBoundaryRect(doll),
+      doll.imageSrc,
+      dollFlipX(doll),
+      'body',
+    )
+  })
 }
 
 export function getGame3BodyRestLift(
@@ -721,21 +854,19 @@ export function getGame3BodyRestLift(
   const active = dolls.filter((doll) => !doll.captured && !doll.falling)
   if (active.length === 0) return floorLift
 
-  // 바닥까지 내려도 몸통이 안 겹치면 바닥까지
-  if (!bodyOverlapsAnyDoll(clawXPercent, floorLift, active)) return floorLift
-  // 최상단에서도 겹치면(드묾) 더 내릴 수 없음
-  if (bodyOverlapsAnyDoll(clawXPercent, GAME3_CLAW.cableVisualLift, active)) {
+  if (!bodyInvadesAnyDoll(clawXPercent, floorLift, active)) return floorLift
+  if (bodyInvadesAnyDoll(clawXPercent, GAME3_CLAW.cableVisualLift, active)) {
     return GAME3_CLAW.cableVisualLift
   }
 
-  let lo = floorLift // 겹침
-  let hi: number = GAME3_CLAW.cableVisualLift // 안 겹침
+  let lo = floorLift
+  let hi: number = GAME3_CLAW.cableVisualLift
   for (let i = 0; i < 26; i += 1) {
     const mid = (lo + hi) / 2
-    if (bodyOverlapsAnyDoll(clawXPercent, mid, active)) lo = mid
+    if (bodyInvadesAnyDoll(clawXPercent, mid, active)) lo = mid
     else hi = mid
   }
-  return hi // 겹치지 않는 가장 깊은(작은) lift
+  return hi
 }
 
 export type Game3DescentDollUpdate = {
@@ -869,26 +1000,22 @@ export function findGame3DescentCandidate(
   return best
 }
 
-/**
- * 닫힌 상태에서 양쪽 다리 박스가 모두 인형 실루엣에 닿아 실제로 감쌌는지 — 최종 파지 판정.
- * 한쪽이라도 인형에 못 닿으면 헛잡음(놓침)으로 본다.
- */
+/** 닫힌 상태 파지 — 경계선 기준 (침범 없음 + 양쪽 반쪽 접촉 + 감싸기) */
 export function doesGame3GripGraspDoll(
   claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
   gripTLeft: number,
   gripTRight: number,
   doll: Game3DollState,
 ): boolean {
-  const legs = getGame3LowerLegRects(
-    claw.xPercent,
-    claw.clawLiftPercent ?? 0,
-    gripTLeft,
-    gripTRight,
-  )
-  return (
-    legBoxTouchesDollSilhouette(legs.left, doll) &&
-    legBoxTouchesDollSilhouette(legs.right, doll)
-  )
+  const lift = claw.clawLiftPercent ?? 0
+  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
+  return evaluateGame3GripGrasp(
+    rectToBoundary(legs.left),
+    rectToBoundary(legs.right),
+    dollToBoundaryRect(doll),
+    doll.imageSrc,
+    dollFlipX(doll),
+  ).valid
 }
 
 /** 접촉 지점 실루엣 두께 → 집게 오므림 gripT (0=완전 닫힘, 1=완전 벌림) — 양팔 동일 */
@@ -959,31 +1086,127 @@ export function getGame3HeldDollAttachCenter(
   }
 }
 
+/** 잡는 순간 인형 위치 유지용 오프셋 (playfield %) — rig 기울기 반영 */
+export function getGame3HeldDollOffsetsAtWorldPoint(
+  claw: Pick<Game2ClawState, 'xPercent' | 'descendT' | 'clawLiftPercent' | 'clawTiltDeg'>,
+  worldX: number,
+  worldY: number,
+): { heldOffsetX: number; heldOffsetY: number } {
+  const render = getGame3ClawRender(
+    claw.xPercent,
+    clamp(claw.descendT ?? 0, 0, 1),
+    claw.clawLiftPercent ?? 0,
+  )
+  const rigTopY = render.cableLengthPercent
+  const attach0 = getGame3HeldDollAttachCenter(claw)
+  const baseY = attach0.y - rigTopY
+  const theta = ((claw.clawTiltDeg ?? 0) * Math.PI) / 180
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+  const baseWorldX = claw.xPercent + baseY * sin
+  const baseWorldY = rigTopY + baseY * cos
+  const dx = worldX - baseWorldX
+  const dy = worldY - baseWorldY
+  return {
+    heldOffsetX: dx * cos + dy * sin,
+    heldOffsetY: -dx * sin + dy * cos,
+  }
+}
+
 /** 잡는 순간 인형 위치 유지용 오프셋 (playfield %) */
 export function getGame3HeldDollOffsets(
-  claw: Pick<Game2ClawState, 'xPercent' | 'descendT' | 'clawLiftPercent'>,
+  claw: Pick<Game2ClawState, 'xPercent' | 'descendT' | 'clawLiftPercent' | 'clawTiltDeg'>,
   doll: Game3DollState,
 ): { heldOffsetX: number; heldOffsetY: number } {
-  const attach = getGame3HeldDollAttachCenter(claw)
+  return getGame3HeldDollOffsetsAtWorldPoint(
+    claw,
+    doll.xPercent,
+    getGame3DollCenterY(doll.stackLevel),
+  )
+}
 
+/** rig 기울기를 반영한 잡은 인형 world 중심 (playfield %). clawTiltDeg = 몸통 기울기만 */
+export function getGame3HeldDollWorldCenter(
+  claw: Pick<
+    Game2ClawState,
+    'xPercent' | 'descendT' | 'clawLiftPercent' | 'clawTiltDeg' | 'heldOffsetX' | 'heldOffsetY'
+  >,
+): { xPercent: number; centerYPercent: number } {
+  const render = getGame3ClawRender(
+    claw.xPercent,
+    clamp(claw.descendT ?? 0, 0, 1),
+    claw.clawLiftPercent ?? 0,
+  )
+  const rigTopY = render.cableLengthPercent
+  const attach0 = getGame3HeldDollAttachCenter(claw)
+  const baseY = attach0.y - rigTopY
+  const theta = ((claw.clawTiltDeg ?? 0) * Math.PI) / 180
+  const cos = Math.cos(theta)
+  const sin = Math.sin(theta)
+  const baseWorldX = claw.xPercent + baseY * sin
+  const baseWorldY = rigTopY + baseY * cos
+  const ox = claw.heldOffsetX
+  const oy = claw.heldOffsetY
   return {
-    heldOffsetX: doll.xPercent - attach.x,
-    heldOffsetY: getGame3DollCenterY(doll.stackLevel) - attach.y,
+    xPercent: baseWorldX + ox * cos + oy * sin,
+    centerYPercent: baseWorldY - ox * sin + oy * cos,
   }
+}
+
+/** carry 중 인형 중심 = 현재 팁 중점 + 잡힌 순간 고정 delta */
+export function getGame3CarriedDollCenterFromTips(
+  claw: Pick<
+    Game2ClawState,
+    'heldGripDeltaX' | 'heldGripDeltaY' | 'heldPinCenterX' | 'heldPinCenterY'
+  >,
+  tips: { left: { x: number; y: number }; right: { x: number; y: number } } | null | undefined,
+): { xPercent: number; centerYPercent: number } | null {
+  if (
+    tips &&
+    claw.heldGripDeltaX != null &&
+    claw.heldGripDeltaY != null
+  ) {
+    const midX = (tips.left.x + tips.right.x) / 2
+    const midY = (tips.left.y + tips.right.y) / 2
+    return {
+      xPercent: midX + claw.heldGripDeltaX,
+      centerYPercent: midY + claw.heldGripDeltaY,
+    }
+  }
+  if (claw.heldPinCenterX != null && claw.heldPinCenterY != null) {
+    return { xPercent: claw.heldPinCenterX, centerYPercent: claw.heldPinCenterY }
+  }
+  return null
+}
+
+/** @deprecated getGame3CarriedDollCenterFromTips 사용 */
+export function getGame3CarriedDollDisplayCenter(
+  claw: Pick<
+    Game2ClawState,
+    | 'heldGripDeltaX'
+    | 'heldGripDeltaY'
+    | 'heldPinCenterX'
+    | 'heldPinCenterY'
+  >,
+  tips?: { left: { x: number; y: number }; right: { x: number; y: number } } | null,
+): { xPercent: number; centerYPercent: number } | null {
+  return getGame3CarriedDollCenterFromTips(claw, tips ?? null)
 }
 
 /** 배출구에서 집게가 벌릴 때 인형 낙하 시작점 (world %) */
 export function getGame3HeldDollReleasePoint(
   claw: Pick<
     Game2ClawState,
-    'xPercent' | 'descendT' | 'clawLiftPercent' | 'heldOffsetX' | 'heldOffsetY'
+    | 'xPercent'
+    | 'descendT'
+    | 'clawLiftPercent'
+    | 'clawTiltDeg'
+    | 'heldOffsetX'
+    | 'heldOffsetY'
   >,
 ): { xPercent: number; visualY: number } {
-  const attach = getGame3HeldDollAttachCenter(claw)
-  return {
-    xPercent: attach.x + claw.heldOffsetX,
-    visualY: attach.y + claw.heldOffsetY,
-  }
+  const center = getGame3HeldDollWorldCenter(claw)
+  return { xPercent: center.xPercent, visualY: center.centerYPercent }
 }
 
 /** 2D 가로 world — Game2Claw 렌더 보정 */

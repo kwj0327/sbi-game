@@ -327,20 +327,21 @@ function getDollRect(doll: Game3DollState): Rect {
   }
 }
 
-function redPartsWithinFloor(clawXPercent: number, clawLiftPercent: number) {
+/** 몸통+다리 analytic 박스가 바닥선(floorY) 아래로 내려가지 않음 */
+function allClawPartsWithinFloor(clawXPercent: number, clawLiftPercent: number) {
   const boxes = getGame3ClawHitboxes(clawXPercent, clawLiftPercent)
   const floorY = GAME3_WORLD.floorY
-  return getRedPartRects(boxes).every((rect) => rect.bottom <= floorY + 0.05)
+  return getGrabPartRects(boxes).every((rect) => rect.bottom <= floorY)
 }
 
 function findFloorLimitLift(clawXPercent: number) {
-  if (redPartsWithinFloor(clawXPercent, 0)) return 0
+  if (allClawPartsWithinFloor(clawXPercent, 0)) return 0
 
   let lo = 0
   let hi: number = MAX_IDLE_LIFT
   while (hi - lo > 0.05) {
     const mid = (lo + hi) / 2
-    if (redPartsWithinFloor(clawXPercent, mid)) hi = mid
+    if (allClawPartsWithinFloor(clawXPercent, mid)) hi = mid
     else lo = mid
   }
   return hi

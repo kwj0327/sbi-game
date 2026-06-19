@@ -1,21 +1,24 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficientPopup'
 import { GameFooterStatus } from '../components/GameFooterStatus'
 import { GameFooterBar } from '../components/GameFooterBar'
 import { ClawGameSuccessPopup } from '../components/claw-game/ClawGameSuccessPopup'
 import { Game2InstructionBar } from '../components/game2/Game2InstructionBar'
 import { Game2PlayControls } from '../components/game2/Game2PlayControls'
-import { Game3Viewport, type Game3ViewportHandle } from '../components/game3/Game3Viewport'
+import { Game3Viewport, type Game3TipAnchor, type Game3TipAnchors, type Game3ViewportHandle } from '../components/game3/Game3Viewport'
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
-import { ALL_DOLL_IMAGES } from '../game/dollConfig'
+import { ALL_DOLL_IMAGES, getDollDisplayNameByImageSrc } from '../game/dollConfig'
 import { addCollectedDoll } from '../game/dollCollection'
 import { preloadDollAlphaMasks } from '../game/dollAlphaMask'
 import { GAME2_CLAW } from '../game/game2Config'
 import { easeOutCubic } from '../game/game2PlayArea'
 import {
   GAME3_CLAW,
+  GAME3_DOLLS,
   GAME3_GUIDE,
+  GAME3_PHYSICS,
+  GAME3_WORLD,
   getDefaultGame3ClawState,
   getGame3ChuteFallSequenceMs,
   isGame3ClawMovementLocked,
@@ -24,13 +27,10 @@ import {
   createRandomGame3Dolls,
   getGame3ChuteCenterX,
   getGame3DollById,
-  getGame3GripTForDollSplit,
-  getGame3HeldDollAttachCenter,
-  getGame3HeldDollOffsets,
   getGame3HeldDollReleasePoint,
   lerpGame3ClawX,
   moveGame3ClawX,
-  resolveGame3DescentStop,
+  stepGame3DescentPush,
   type Game3DollState,
 } from '../game/game3PlayArea'
 import './Game3.css'
@@ -38,6 +38,24 @@ import './Game3.css'
 type Game3Props = {
   onExit: () => void
   onGoToAttendance: () => void
+}
+
+function findNearestGame3GrabDollId(
+  clawXPercent: number,
+  dolls: readonly Game3DollState[],
+): number | null {
+  let bestId: number | null = null
+  let bestDist = Number.POSITIVE_INFINITY
+  for (const doll of dolls) {
+    if (doll.captured || doll.falling) continue
+    const dist = Math.abs(doll.xPercent - clawXPercent)
+    if (dist > GAME3_DOLLS.grabRadiusX) continue
+    if (dist < bestDist) {
+      bestDist = dist
+      bestId = doll.id
+    }
+  }
+  return bestId
 }
 
 function getStatusMessage(phase: string, hasHeldDoll: boolean) {
@@ -80,38 +98,23 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     clawLiftPercent: 0,
     hitDollId: null,
   })
-  /** 오므림 직후 바닥 인형 위치 — useLayoutEffect에서 held 위치 보정용 */
-  const pendingHeldSnapRef = useRef<{
-    dollId: number
-    xPercent: number
-    centerYPercent: number
-  } | null>(null)
-
   useEffect(() => {
     preloadDollAlphaMasks(ALL_DOLL_IMAGES)
   }, [])
 
-  useLayoutEffect(() => {
-    const pending = pendingHeldSnapRef.current
-    if (!pending || claw.heldDollId !== pending.dollId) return
+  // 잡힌 뒤 홀드 → 상승 (effect cleanup에 타이머가 있어 Strict Mode에서도 재스케줄됨)
+  useEffect(() => {
+    if (claw.phase !== 'down' || claw.heldDollId === null) return
 
-    const heldMeasure = viewportRef.current?.measureHeldDoll()
-    if (!heldMeasure) return
+    const timer = window.setTimeout(() => {
+      setClaw((prev) => {
+        if (prev.phase !== 'down' || prev.heldDollId === null) return prev
+        return { ...prev, phase: 'ascending' as const }
+      })
+    }, GAME3_CLAW.holdAtBottomMs)
 
-    pendingHeldSnapRef.current = null
-    const dX = pending.xPercent - heldMeasure.xPercent
-    const dY = pending.centerYPercent - heldMeasure.centerYPercent
-    if (Math.abs(dX) < 0.02 && Math.abs(dY) < 0.02) return
-
-    setClaw((prev) => {
-      if (prev.heldDollId !== pending.dollId) return prev
-      return {
-        ...prev,
-        heldOffsetX: prev.heldOffsetX + dX,
-        heldOffsetY: prev.heldOffsetY + dY,
-      }
-    })
-  }, [claw.heldDollId])
+    return () => window.clearTimeout(timer)
+  }, [claw.phase, claw.heldDollId])
 
   const controlsLocked = isGame3ClawMovementLocked(claw) || successDollImage !== null
 
@@ -155,57 +158,213 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
         gripTRight: undefined,
         heldOffsetX: 0,
         heldOffsetY: 0,
+        heldPinCenterX: undefined,
+        heldPinCenterY: undefined,
+        heldGripDeltaX: undefined,
+        heldGripDeltaY: undefined,
+        grabArmTiltDeg: undefined,
         clawLiftPercent: GAME3_CLAW.cableVisualLift,
+        clawTiltDeg: 0,
       }
     })
   }, [])
 
-  // 하강 — 실제 렌더된 집게(초록 몸통/빨강 다리)와 인형 실루엣을 DOM에서 측정해
-  // 부품이 인형에 닿는(또는 바닥) 높이까지만 내려간다. 시각과 판정이 항상 일치.
+  // 하강 — 팁이 인형에 닿으면 접촉 지점 pin 후 몸체를 계속 꺾으며 하강.
+  // pin 중 정지: 바닥, 몸통 얹힘, 다른 인형(비-pin) 접촉. (옆으로 밀리지 않음)
   useEffect(() => {
     if (claw.phase !== 'descending') return
 
-    const clawX = clawRef.current.xPercent
-    const measured = viewportRef.current?.measureDescentStop() ?? null
-    const fallback = resolveGame3DescentStop(clawX, dollsRef.current)
-    const stopLift = measured?.clawLiftPercent ?? fallback.clawLiftPercent
-    const hitDollId = measured?.hitDollId ?? fallback.hitDoll?.id ?? null
-    descentStopRef.current = { clawLiftPercent: stopLift, hitDollId }
-
     const startLift = GAME3_CLAW.cableVisualLift
+    let currentLift: number = startLift
+    let currentX = clawRef.current.xPercent
+    let currentTilt = 0
+    const floorY = GAME3_WORLD.floorY
+
+    type TipPin = { x: number; y: number; dollId: number }
+    let leftPin: TipPin | null = null
+    let rightPin: TipPin | null = null
+
     const { descendDurationMs } = GAME3_CLAW
-    const start = performance.now()
+    let ratePctPerMs = 0
+    let rateInitialized = false
+    const {
+      maxDescentTiltDeg,
+      tipPinMaxTiltDeg,
+      tipPinTiltGainY,
+      tipPinTiltGainX,
+      tipPinDescentTiltRate,
+    } = GAME3_PHYSICS
+    let last = performance.now()
     let frame = 0
+    let settled = false
+
+    const clampTilt = (pinned: boolean) => {
+      const limit = pinned ? tipPinMaxTiltDeg : maxDescentTiltDeg
+      currentTilt = Math.max(-limit, Math.min(limit, currentTilt))
+    }
+
+    const clampLiftToFloor = () => {
+      const lowest = viewportRef.current?.measureClawLowestBottom()
+      if (lowest != null && lowest > floorY + 1e-3) {
+        currentLift += lowest - floorY
+      }
+      const minLift = viewportRef.current?.measureFloorLiftFromDom(currentLift)
+      if (minLift != null) {
+        currentLift = Math.max(minLift, currentLift)
+      }
+    }
+
+    const updateTipPins = (tips: Game3TipAnchors) => {
+      if (!leftPin && tips.left.touch && tips.left.dollId != null) {
+        leftPin = { x: tips.left.x, y: tips.left.y, dollId: tips.left.dollId }
+      }
+      if (!rightPin && tips.right.touch && tips.right.dollId != null) {
+        rightPin = { x: tips.right.x, y: tips.right.y, dollId: tips.right.dollId }
+      }
+    }
+
+    const applyTipPinTilt = (tips: Game3TipAnchors, descendStep: number) => {
+      const pinned = leftPin != null || rightPin != null
+      if (leftPin) {
+        const errY = tips.left.y - leftPin.y
+        const errX = tips.left.x - leftPin.x
+        currentTilt += errY * tipPinTiltGainY - errX * tipPinTiltGainX
+        currentTilt += descendStep * tipPinDescentTiltRate
+      }
+      if (rightPin) {
+        const errY = tips.right.y - rightPin.y
+        const errX = tips.right.x - rightPin.x
+        currentTilt -= errY * tipPinTiltGainY + errX * tipPinTiltGainX
+        currentTilt -= descendStep * tipPinDescentTiltRate
+      }
+      if (!pinned) {
+        currentTilt *= 0.92
+      }
+      clampTilt(pinned)
+    }
+
+    const getPinnedDollIds = () => {
+      const ids = new Set<number>()
+      if (leftPin) ids.add(leftPin.dollId)
+      if (rightPin) ids.add(rightPin.dollId)
+      return ids
+    }
+
+    const isOtherDollBlock = (tips: Game3TipAnchors | null | undefined) => {
+      if (!tips) return false
+      const pinnedIds = getPinnedDollIds()
+      if (pinnedIds.size === 0) return false
+      const otherTipTouchesForeignDoll = (tip: Game3TipAnchor, pin: TipPin | null) => {
+        if (pin != null) return false
+        return tip.touch && tip.dollId != null && !pinnedIds.has(tip.dollId)
+      }
+      return (
+        otherTipTouchesForeignDoll(tips.left, leftPin) ||
+        otherTipTouchesForeignDoll(tips.right, rightPin)
+      )
+    }
+
+    const finalize = (lift: number, x: number, tilt: number) => {
+      descentStopRef.current = {
+        clawLiftPercent: lift,
+        hitDollId: findNearestGame3GrabDollId(x, dollsRef.current),
+      }
+      setClaw((prev) =>
+        prev.phase === 'descending'
+          ? {
+              ...prev,
+              phase: 'down',
+              xPercent: x,
+              descendT: 1,
+              clawLiftPercent: lift,
+              clawTiltDeg: tilt,
+              open: false,
+              gripT: 1,
+              gripTLeft: 1,
+              gripTRight: 1,
+              heldDollId: null,
+              heldOffsetX: 0,
+              heldOffsetY: 0,
+              heldPinCenterX: undefined,
+              heldPinCenterY: undefined,
+              heldGripDeltaX: undefined,
+              heldGripDeltaY: undefined,
+              grabArmTiltDeg: undefined,
+            }
+          : prev,
+      )
+    }
 
     const animate = (now: number) => {
-      const linear = Math.min(1, (now - start) / descendDurationMs)
-      const eased = easeOutCubic(linear)
-      const lift = startLift + (stopLift - startLift) * eased
+      if (settled) return
+      const dt = Math.min(50, now - last)
+      last = now
 
-      if (linear >= 1) {
+      const tips = viewportRef.current?.measureTipAnchors()
+      if (tips) updateTipPins(tips)
+      if (!rateInitialized) {
+        const minLift = viewportRef.current?.measureFloorLiftFromDom(currentLift) ?? 0
+        ratePctPerMs = Math.max(0.0001, (startLift - minLift) / descendDurationMs)
+        rateInitialized = true
+      }
+      const minLift =
+        viewportRef.current?.measureFloorLiftFromDom(currentLift) ?? 0
+      const descendStep = ratePctPerMs * dt
+
+      const contact = viewportRef.current?.measureClawContact()
+
+      const hasPin = leftPin != null || rightPin != null
+      const bodyResting = (contact?.body.inside ?? 0) >= 3
+      const bothTipsOnDoll =
+        !hasPin &&
+        tips?.left.touch === true &&
+        tips?.right.touch === true &&
+        tips.left.dollId != null &&
+        tips.left.dollId === tips.right.dollId
+      const atFloor = currentLift <= minLift + 1e-3
+      const otherDollBlock = isOtherDollBlock(tips)
+      if (atFloor || bodyResting || otherDollBlock || bothTipsOnDoll) {
+        clampLiftToFloor()
+        const lift = atFloor ? minLift : currentLift
         setClaw((prev) =>
           prev.phase === 'descending'
-            ? {
-                ...prev,
-                phase: 'down',
-                descendT: 1,
-                clawLiftPercent: stopLift,
-                open: false,
-                gripT: 1,
-                gripTLeft: 1,
-                gripTRight: 1,
-                heldDollId: null,
-                heldOffsetX: 0,
-                heldOffsetY: 0,
-              }
+            ? { ...prev, clawLiftPercent: lift, xPercent: currentX, clawTiltDeg: currentTilt }
             : prev,
         )
+        settled = true
+        finalize(lift, currentX, currentTilt)
         return
       }
 
+      currentLift = Math.max(minLift, currentLift - descendStep)
+      clampLiftToFloor()
+      if (tips) applyTipPinTilt(tips, descendStep)
+
+      // 팁 pin 중에는 집게가 옆으로 밀리지 않음 — 인형 밀기도 비활성
+      const pushUpdates =
+        leftPin || rightPin
+          ? []
+          : stepGame3DescentPush(currentX, currentLift, dollsRef.current, dt)
+      if (pushUpdates.length > 0) {
+        setDolls((prev) =>
+          prev.map((doll) => {
+            const u = pushUpdates.find((up) => up.id === doll.id)
+            return u ? { ...doll, xPercent: u.xPercent, rotateDeg: u.rotateDeg } : doll
+          }),
+        )
+      }
+
       setClaw((prev) =>
-        prev.phase === 'descending' ? { ...prev, clawLiftPercent: lift } : prev,
+        prev.phase === 'descending'
+          ? {
+              ...prev,
+              xPercent: currentX,
+              clawLiftPercent: currentLift,
+              clawTiltDeg: currentTilt,
+            }
+          : prev,
       )
+
       frame = requestAnimationFrame(animate)
     }
 
@@ -213,101 +372,144 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     return () => cancelAnimationFrame(frame)
   }, [claw.phase])
 
-  // 바닥에서 집게 오므리기 → 잠깐 멈춤 → 상승 (게임2 방식)
+  // 오므림 — 좌·우 다리를 각각 닫다가 집게발 팁이 인형 실루엣에 닿으면 그 다리는
+  // 멈춘다. 둘 다 멈추면 양쪽 팁이 같은 인형에 닿았는지(잡힘) 판정한다.
   useEffect(() => {
     if (claw.phase !== 'down') return
 
-    const start = performance.now()
-    const { closeDurationMs, holdAtBottomMs } = GAME3_CLAW
-    const grabId = descentStopRef.current.hitDollId
-    const grabDoll =
-      grabId !== null ? getGame3DollById(dollsRef.current, grabId) : null
-    const clawAtGrab = {
-      xPercent: clawRef.current.xPercent,
-      descendT: 1 as const,
-      clawLiftPercent: clawRef.current.clawLiftPercent,
-    }
-    const targetGrip = grabDoll
-      ? getGame3GripTForDollSplit(grabDoll, clawAtGrab)
-      : { left: 0, right: 0 }
+    const { closeDurationMs } = GAME3_CLAW
+    const startTilt = clawRef.current.clawTiltDeg ?? 0
+    // 벌린 상태의 팁이 인형을 살짝 스치는 것을 무시하기 위한 최소 닫힘량
+    const CONTACT_GATE = 0.12
+    let last = performance.now()
     let frame = 0
-    let holdTimer: number | null = null
+    let leftDone = false
+    let rightDone = false
 
-    const animate = (now: number) => {
-      const t = Math.min(1, (now - start) / closeDurationMs)
-      const gripTLeft = 1 - t * (1 - targetGrip.left)
-      const gripTRight = 1 - t * (1 - targetGrip.right)
-      setClaw((prev) => {
-        if (prev.phase !== 'down') return prev
-        return {
-          ...prev,
-          gripTLeft,
-          gripTRight,
-          gripT: Math.min(gripTLeft, gripTRight),
-        }
-      })
-
-      if (t < 1) {
-        frame = requestAnimationFrame(animate)
-      } else {
-        // 오므림 완료 — DOM이 최종 grip 포즈로 그려진 뒤 실제 다리 위치로 파지 판정
+    const finishClose = () => {
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setClaw((prev) => {
             if (prev.phase !== 'down') return prev
-            const hitId = descentStopRef.current.hitDollId
-            if (hitId === null) return prev
+
+            const preferredId =
+              descentStopRef.current.hitDollId ??
+              findNearestGame3GrabDollId(prev.xPercent, dollsRef.current)
+            const inRange = dollsRef.current
+              .filter(
+                (d) =>
+                  !d.captured &&
+                  !d.falling &&
+                  Math.abs(d.xPercent - prev.xPercent) <= GAME3_DOLLS.grabRadiusX * 1.3,
+              )
+              .sort(
+                (a, b) =>
+                  Math.abs(a.xPercent - prev.xPercent) -
+                  Math.abs(b.xPercent - prev.xPercent),
+              )
+            const candidates =
+              preferredId !== null
+                ? [preferredId, ...inRange.map((d) => d.id)]
+                : inRange.map((d) => d.id)
+
+            let hitId: number | null = null
+            for (const id of candidates) {
+              if (viewportRef.current?.measureSegmentGrasp(id)?.valid) {
+                hitId = id
+                break
+              }
+            }
+
+            if (hitId === null) {
+              return {
+                ...prev,
+                phase: 'ascending',
+                heldDollId: null,
+              }
+            }
 
             const held = getGame3DollById(dollsRef.current, hitId)
             if (!held) return prev
 
-            // hitId는 하강 DOM 측정(measureDescentStop)으로 정해짐 — 하강·오므림이 맞으면 파지
-
-            const clawAtAttach = {
-              xPercent: prev.xPercent,
-              descendT: 1 as const,
-              clawLiftPercent: prev.clawLiftPercent,
-            }
             const floorMeasure = viewportRef.current?.measureDollCenter(hitId)
-            if (floorMeasure) {
-              pendingHeldSnapRef.current = {
-                dollId: hitId,
-                xPercent: floorMeasure.xPercent,
-                centerYPercent: floorMeasure.centerYPercent,
-              }
+            const tips = viewportRef.current?.measureTipAnchors()
+            let heldGripDeltaX: number | undefined
+            let heldGripDeltaY: number | undefined
+            if (floorMeasure && tips) {
+              const midX = (tips.left.x + tips.right.x) / 2
+              const midY = (tips.left.y + tips.right.y) / 2
+              heldGripDeltaX = floorMeasure.xPercent - midX
+              heldGripDeltaY = floorMeasure.centerYPercent - midY
             }
-            const offsets = floorMeasure
-              ? (() => {
-                  const attach = getGame3HeldDollAttachCenter(clawAtAttach)
-                  return {
-                    heldOffsetX: floorMeasure.xPercent - attach.x,
-                    heldOffsetY: floorMeasure.centerYPercent - attach.y,
-                  }
-                })()
-              : getGame3HeldDollOffsets(clawAtAttach, held)
+
+            const syncGripL = prev.gripTLeft ?? 1
+            const syncGripR = prev.gripTRight ?? 1
 
             return {
               ...prev,
               heldDollId: hitId,
-              heldOffsetX: offsets.heldOffsetX,
-              heldOffsetY: offsets.heldOffsetY,
+              heldOffsetX: 0,
+              heldOffsetY: 0,
+              heldPinCenterX: floorMeasure?.xPercent,
+              heldPinCenterY: floorMeasure?.centerYPercent,
+              heldGripDeltaX,
+              heldGripDeltaY,
+              grabArmTiltDeg: startTilt,
+              gripTLeft: syncGripL,
+              gripTRight: syncGripR,
+              gripT: Math.min(syncGripL, syncGripR),
+              clawTiltDeg: startTilt,
             }
           })
-
-          holdTimer = window.setTimeout(() => {
-            setClaw((prev) => {
-              if (prev.phase !== 'down') return prev
-              return { ...prev, phase: 'ascending' }
-            })
-          }, holdAtBottomMs)
         })
+      })
+    }
+
+    const animate = (now: number) => {
+      const dt = Math.min(50, now - last)
+      last = now
+      const gripStep = dt / closeDurationMs
+
+      // 렌더된(=clawRef) 현재 grip으로 DOM 접촉을 측정 — 측정과 상태 일치
+      const cur = clawRef.current
+      const curL = cur.gripTLeft ?? 1
+      const curR = cur.gripTRight ?? 1
+      const tipContact = viewportRef.current?.measureTipContact()
+
+      // 집게발 팁(빨간 채움)이 인형 실루엣에 닿으면 그 다리는 멈춤
+      if (!leftDone && 1 - curL > CONTACT_GATE && tipContact?.left) {
+        leftDone = true
+      }
+      if (!rightDone && 1 - curR > CONTACT_GATE && tipContact?.right) {
+        rightDone = true
+      }
+
+      const nextL = leftDone ? curL : Math.max(0, curL - gripStep)
+      const nextR = rightDone ? curR : Math.max(0, curR - gripStep)
+      if (nextL <= 0) leftDone = true
+      if (nextR <= 0) rightDone = true
+
+      setClaw((prev) =>
+        prev.phase === 'down'
+          ? {
+              ...prev,
+              gripTLeft: nextL,
+              gripTRight: nextR,
+              gripT: Math.min(nextL, nextR),
+              clawTiltDeg: startTilt,
+            }
+          : prev,
+      )
+
+      if (leftDone && rightDone) {
+        finishClose()
+      } else {
+        frame = requestAnimationFrame(animate)
       }
     }
 
     frame = requestAnimationFrame(animate)
-    return () => {
-      cancelAnimationFrame(frame)
-      if (holdTimer !== null) window.clearTimeout(holdTimer)
-    }
+    return () => cancelAnimationFrame(frame)
   }, [claw.phase])
 
   useEffect(() => {
@@ -332,6 +534,7 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
               descendT: 0,
               open: false,
               clawLiftPercent: 0,
+              clawTiltDeg: 0,
             }
           }
 
@@ -345,9 +548,22 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
             gripTLeft: undefined,
             gripTRight: undefined,
             clawLiftPercent: 0,
+            clawTiltDeg: 0,
+            heldPinCenterX: undefined,
+            heldPinCenterY: undefined,
+            heldGripDeltaX: undefined,
+            heldGripDeltaY: undefined,
+            grabArmTiltDeg: undefined,
           }
         }
-        return { ...prev, descendT: 1 - eased }
+
+        const frozenArmTilt = prev.grabArmTiltDeg ?? prev.clawTiltDeg ?? 0
+        const bodyTilt = frozenArmTilt * (1 - eased)
+        return {
+          ...prev,
+          descendT: 1 - eased,
+          clawTiltDeg: bodyTilt,
+        }
       })
 
       if (linear < 1) frame = requestAnimationFrame(animate)
@@ -453,6 +669,11 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
           gripT: 1,
           gripTLeft: undefined,
           gripTRight: undefined,
+          heldPinCenterX: undefined,
+          heldPinCenterY: undefined,
+          heldGripDeltaX: undefined,
+          heldGripDeltaY: undefined,
+          grabArmTiltDeg: undefined,
         }
       })
     }, GAME3_CLAW.holdAtChuteMs)
@@ -503,6 +724,12 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
             gripTLeft: undefined,
             gripTRight: undefined,
             clawLiftPercent: 0,
+            clawTiltDeg: 0,
+            heldPinCenterX: undefined,
+            heldPinCenterY: undefined,
+            heldGripDeltaX: undefined,
+            heldGripDeltaY: undefined,
+            grabArmTiltDeg: undefined,
           }
         }
         return {
@@ -597,6 +824,7 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
       {successDollImage !== null ? (
         <ClawGameSuccessPopup
           imageSrc={successDollImage}
+          dollName={getDollDisplayNameByImageSrc(successDollImage)}
           onConfirm={() => setSuccessDollImage(null)}
         />
       ) : null}

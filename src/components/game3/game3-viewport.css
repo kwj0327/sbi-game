@@ -63,39 +63,42 @@
   z-index: 3;
 }
 
-/* 케이블·본체 left를 월드 스크롤과 동일 타이밍(0.1s linear)으로 보간 */
+/* 케이블·rig — 이동 시 집게와 world 인형 동기 (들고 있을 때 transition 끔) */
 .g3-world__playfield .g2-claw__cable,
 .g3-world__playfield .g2-claw__rig {
   transition: left 0.1s linear;
 }
 
-/* 🔴🟢 디버그 — 집게 경계 시각화
-   몸통: .g2-claw__body (초록)
-   다리(양쪽 각 2부품): 관절 기준
-     · .g2-claw__arm-upper — 어깨(윗팔) 한 쌍
-     · .g2-claw__arm-lower — 다리(아랫팔) 한 쌍 */
-.g3-world__playfield .g2-claw__arm-upper {
+.g3-world__playfield .g2-claw--carrying .g2-claw__cable,
+.g3-world__playfield .g2-claw--carrying .g2-claw__rig {
+  transition: none;
+}
+
+/* 개발용 — GAME3_DEV_OVERLAYS=true 일 때만 표시 */
+.g3-viewport--dev-overlays .g3-world__playfield .g2-claw__arm-upper {
   outline: 4px dashed #ff2d2d;
   outline-offset: -2px;
 }
 
-.g3-world__playfield .g2-claw__arm-lower {
+.g3-viewport--dev-overlays .g3-world__playfield .g2-claw__arm-lower {
   outline: 4px dashed #ff2d2d;
   outline-offset: -2px;
 }
 
-.g3-world__playfield .g2-claw__body {
+.g3-viewport--dev-overlays .g3-world__playfield .g2-claw__tip {
+  background: rgb(255 45 45 / 88%) !important;
+  box-shadow:
+    inset 0 0 0 2px rgb(180 0 0 / 90%),
+    0 0 0 2px rgb(255 255 255 / 55%),
+    0 2px 4px rgb(0 0 0 / 25%) !important;
+}
+
+.g3-viewport--dev-overlays .g3-world__playfield .g2-claw__body {
   outline: 4px dashed #22c55e;
   outline-offset: -2px;
 }
 
-.g3-world__playfield .g2-stage__playfield {
-  position: absolute;
-  inset: 0;
-}
-
-/* 🟡 배출구 영역 — 빨간선 왼쪽 (선물상자) */
-.g3-chute-zone {
+.g3-viewport--dev-overlays .g3-chute-zone {
   position: absolute;
   z-index: 2;
   box-sizing: border-box;
@@ -104,8 +107,7 @@
   pointer-events: none;
 }
 
-/* 배출구 / 플레이 경계 — 선물상자 오른쪽 */
-.g3-guide-boundary {
+.g3-viewport--dev-overlays .g3-guide-boundary {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -116,8 +118,7 @@
   pointer-events: none;
 }
 
-/* ⬛ 디버그 — 게임 바닥선 (GAME3_WORLD.floorY, 인형 발 위치) */
-.g3-guide-floor {
+.g3-viewport--dev-overlays .g3-guide-floor {
   position: absolute;
   left: 0;
   right: 0;
@@ -127,3 +128,47 @@
   filter: drop-shadow(0 0 1px rgb(255 255 255 / 80%));
   pointer-events: none;
 }
+
+.g3-viewport--dev-overlays .g3-doll-silhouette {
+  display: block;
+}
+
+.g3-world__playfield .g2-claw__rig {
+  transform: translateX(-50%) scale(var(--g2-claw-depth-scale, 1));
+}
+
+/* Game3 — 몸통·어깨·다리(팔 전체) body-tilt 로 상승 시 함께 수직. 관절 각(--g2-lower)만 잡힌 포즈 유지 */
+.g3-world__playfield .g2-claw__stem {
+  transform: translateX(-50%) rotate(var(--g3-claw-body-tilt, 0deg));
+  transform-origin: top center;
+}
+
+.g3-world__playfield .g2-claw__body {
+  transform: translateX(-50%) rotate(var(--g3-claw-body-tilt, 0deg));
+  transform-origin: top center;
+}
+
+.g3-world__playfield .g2-claw__arms {
+  transform: rotate(var(--g3-claw-shoulder-tilt, 0deg));
+  transform-origin: 50% 32%;
+}
+
+.g3-world__playfield .g2-claw--carrying .g2-claw__arm {
+  transition: none;
+}
+.g3-carried-doll {
+  position: absolute;
+  z-index: 7;
+  transform: translate(-50%, -50%)
+    scaleX(var(--g3-doll-face-x, 1))
+    rotate(var(--g3-doll-rotate, 0deg));
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+.g3-world__playfield .g2-stage__playfield {
+  position: absolute;
+  inset: 0;
+}
+
+.g3-carried-doll {

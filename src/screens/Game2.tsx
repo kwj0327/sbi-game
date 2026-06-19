@@ -8,7 +8,7 @@ import { Game2PlayControls } from '../components/game2/Game2PlayControls'
 import { Game2Viewport, type Game2ViewportHandle } from '../components/game2/Game2Viewport'
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
-import { ALL_DOLL_IMAGES, pickRandomGame2DollIndices } from '../game/dollConfig'
+import { ALL_DOLL_IMAGES, getDollDisplayNameByImageSrc, pickRandomGame2DollIndices } from '../game/dollConfig'
 import { addCollectedDoll } from '../game/dollCollection'
 import {
   GAME2_CLAW,
@@ -763,6 +763,7 @@ export function Game2({ onExit, onGoToAttendance }: Game2Props) {
           {successDollImage !== null ? (
             <ClawGameSuccessPopup
               imageSrc={successDollImage}
+              dollName={getDollDisplayNameByImageSrc(successDollImage)}
               onConfirm={() => setSuccessDollImage(null)}
             />
           ) : null}

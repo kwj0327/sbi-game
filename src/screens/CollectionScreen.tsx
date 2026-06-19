@@ -3,7 +3,7 @@ import { Game3DollDetail } from '../components/game3/Game3DollDetail'
 import { Game3ResetConfirm } from '../components/game3/Game3ResetConfirm'
 import { MobileLayout } from '../components/MobileLayout'
 import game3CollectionIcon from '../assets/game3-collection-icon.png'
-import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES } from '../game/dollConfig'
+import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES, getDollDisplayName } from '../game/dollConfig'
 import { clearCollectedDolls } from '../game/dollCollection'
 import { useDollCollection } from '../hooks/useDollCollection'
 import './CollectionScreen.css'
@@ -75,7 +75,7 @@ export function CollectionScreen({ onExit }: CollectionScreenProps) {
                     </span>
                   ) : null}
                 </div>
-                <p className="collection-doll__label">No.{index + 1}</p>
+                <p className="collection-doll__label">{getDollDisplayName(index)}</p>
               </>
             )
 
@@ -86,7 +86,7 @@ export function CollectionScreen({ onExit }: CollectionScreenProps) {
                     type="button"
                     className="collection-doll collection-doll--collected collection-doll--clickable"
                     onClick={() => setSelectedDollIndex(index)}
-                    aria-label={`No.${index + 1} 인형 보기`}
+                    aria-label={`${getDollDisplayName(index)} 인형 보기`}
                   >
                     {dollContent}
                   </button>

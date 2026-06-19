@@ -13,6 +13,8 @@ import {
 
 type Game2ClawProps = {
   claw?: Partial<Game2ClawState>
+  /** 스프라이트 없이 carrying 스타일만 (Game3 world 부착 인형) */
+  carrying?: boolean
   heldDoll?: {
     imageSrc: string
     rotateDeg: number
@@ -71,6 +73,7 @@ function lerpClawPoseSplit(gripTLeft: number, gripTRight: number): ClawPose {
 
 export function Game2Claw({
   claw,
+  carrying = false,
   heldDoll = null,
   renderOverride,
   varOverrides,
@@ -125,7 +128,7 @@ export function Game2Claw({
 
   return (
     <div
-      className={`g2-claw${open ? ' g2-claw--open' : ' g2-claw--closed'}${isCableAnimating ? ' g2-claw--descending' : ''}${phase === 'down' ? ' g2-claw--closing' : ''}${heldDoll ? ' g2-claw--carrying' : ''}`}
+      className={`g2-claw${open ? ' g2-claw--open' : ' g2-claw--closed'}${isCableAnimating ? ' g2-claw--descending' : ''}${phase === 'down' ? ' g2-claw--closing' : ''}${heldDoll || carrying ? ' g2-claw--carrying' : ''}`}
       style={{
         ['--g2-claw-x' as string]: `${render.xPercent}%`,
         ['--g2-claw-rail-y' as string]: `${GAME2_CLAW.railY}%`,

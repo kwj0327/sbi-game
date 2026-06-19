@@ -14,6 +14,7 @@ import { DrawTicketInsufficientPopup } from '../components/DrawTicketInsufficien
 import { MobileLayout } from '../components/MobileLayout'
 import { DRAW_TICKET_PLAY_COST, getClawCoinBalance, spendClawCoins } from '../game/clawCoins'
 import { addCollectedDoll } from '../game/dollCollection'
+import { getDollDisplayName } from '../game/dollConfig'
 import {
   ALL_DOLL_IMAGES,
   DOLL_COUNT,
@@ -270,6 +271,7 @@ export function ClawGame({ onExit, onGoToAttendance }: ClawGameProps) {
             {successDollIndex !== null ? (
               <ClawGameSuccessPopup
                 imageSrc={ALL_DOLL_IMAGES[sessionDollIndices[successDollIndex]]}
+                dollName={getDollDisplayName(sessionDollIndices[successDollIndex])}
                 onConfirm={resetRound}
               />
             ) : null}

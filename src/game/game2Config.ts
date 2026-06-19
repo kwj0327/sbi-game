@@ -205,6 +205,16 @@ export type Game2ClawState = {
   heldGripQuality: number
   /** 더미(쌓인 인형) 위에서 멈추도록 집게를 위로 들어올리는 양 (stage %). 0이면 바닥까지 */
   clawLiftPercent: number
+  /** Game3 — 하강 중 다리 걸림 시 본체 기울기 (deg, + = 오른쪽으로 기울음) */
+  clawTiltDeg?: number
+  /** Game3 — 잡힌 순간 인형 world 중심 (playfield %). fallback·배출용 */
+  heldPinCenterX?: number
+  heldPinCenterY?: number
+  /** Game3 — 잡힌 순간 팁 중점 → 인형 중심 오프셋 (world %). carry 중 팁 추적 */
+  heldGripDeltaX?: number
+  heldGripDeltaY?: number
+  /** Game3 — 잡힌 순간 전체 기울기 (deg). 상승 애니 시작값; 몸·어깨·다리는 clawTiltDeg 로 함께 수직 복귀 */
+  grabArmTiltDeg?: number
 }
 
 /**

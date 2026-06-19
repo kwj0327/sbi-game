@@ -1,5 +1,8 @@
 import type { Game2ClawState } from './game2Config'
 
+/** 개발용 영역 표시 (배출구·경계선·바닥선·집게 히트박스·인형 실루엣) */
+export const GAME3_DEV_OVERLAYS = false
+
 /** 배경 PNG (1560×981) */
 export const GAME3_WORLD = {
   width: 1560,
@@ -88,6 +91,17 @@ export const GAME3_DOLLS = {
 export const GAME3_GRAB = {
   lowerClosedLeftDeg: -125,
   lowerClosedRightDeg: 125,
+  /**
+   * 닫힌 다리 사이로 잡힌 인형 실루엣 가로 폭 비율 (0~1).
+   * 양쪽 다리가 침범 없이 오므렸을 때 이 비율 이상이면 성공.
+   */
+  minCoverageRatio: 0.05,
+  /** 겹침 샘플이 이 수를 넘으면 침범 (1~2는 격자 경계 오차만 허용) */
+  maxBoundaryOverlapSamples: 2,
+  /** 실루엣 중앙선을 넘어 반대편 샘플이 이 수 이상이면 관통 */
+  legWrongSideSamples: 5,
+  /** 실루엣 폭 대비 중앙선 여유 (0.08 = 8%) */
+  silhouetteMidMarginFrac: 0.08,
 } as const
 
 /** 하강 충돌 반응 — 다리/몸통이 인형에 부딪히면 인형이 밀리고 회전 (의사물리) */
@@ -100,6 +114,28 @@ export const GAME3_PHYSICS = {
   maxRotateDeg: 28,
   /** 인형 중심이 머물 수 있는 좌측 한계 여백 (배출구 경계 기준 world %) */
   pushBoundMargin: 1.5,
+  /**
+   * 다리가 인형에 먼저 걸릴 때 — 멈추지 않고 본체가 미끄러지며 더 하강.
+   * 왼쪽 다리 걸림 → 집게가 오른쪽(+), 오른쪽 다리 걸림 → 왼쪽(-).
+   */
+  legSlideSpeedPctPerMs: 0.038,
+  /** 한쪽 다리 걸림 시 기울어지는 각도 (deg) */
+  legSlideTiltDeg: 14,
+  legSlideTiltSpeedDegPerMs: 0.12,
+  /** pin 없을 때 하강 기울기 상한 (deg) */
+  maxDescentTiltDeg: 22,
+  /** 팁 pin 중 하강·기울기 연동 상한 — 바닥/다른 장애물까지 계속 꺾임 */
+  tipPinMaxTiltDeg: 58,
+  /** 팁 고정 후 y축 이탈 → 몸체 기울기 보정 (deg / world%) */
+  tipPinTiltGainY: 4.2,
+  /** 팁 고정 후 x축 이탈 → 몸체 기울기 보정 (deg / world%) */
+  tipPinTiltGainX: 0.8,
+  /** pin 상태에서 lift 1% 하강당 추가 기울기 (deg) — 접촉점 유지 */
+  tipPinDescentTiltRate: 4.8,
+  /** 몸통/다리가 인형 실루엣 안으로 파고드는 것으로 볼 추가 깊이 (world %) */
+  penetrateMarginY: 1.2,
+  /** 기울기 유지로 닫을 때 이 각도 이상이면 양쪽 다리 완전 닫힘 시도 */
+  tiltedGrabThresholdDeg: 6,
 } as const
 
 export function getDefaultGame3ClawState(): Game2ClawState {
@@ -115,6 +151,7 @@ export function getDefaultGame3ClawState(): Game2ClawState {
     heldOffsetY: 0,
     heldGripQuality: 1,
     clawLiftPercent: 0,
+    clawTiltDeg: 0,
   }
 }
 

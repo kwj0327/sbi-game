@@ -10,7 +10,6 @@ type Game3DollDetailProps = {
 
 export function Game3DollDetail({ dollIndex, imageSrc, count, onClose }: Game3DollDetailProps) {
   const name = getDollDisplayName(dollIndex)
-  const numberLabel = `No.${dollIndex + 1}`
 
   return (
     <div className="game3-doll-detail" role="presentation">
@@ -29,9 +28,6 @@ export function Game3DollDetail({ dollIndex, imageSrc, count, onClose }: Game3Do
         <p id="game3-doll-detail-title" className="game3-doll-detail__name">
           {name}
         </p>
-        {name !== numberLabel ? (
-          <p className="game3-doll-detail__number">{numberLabel}</p>
-        ) : null}
         <div className="game3-doll-detail__frame">
           <img
             src={imageSrc}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES } from '../game/dollConfig'
+import { ALL_DOLL_COUNT, ALL_DOLL_IMAGES, getDollDisplayName } from '../game/dollConfig'
 import { exchangeCollectedDolls } from '../game/dollCollection'
 import { DOLL_EXCHANGE_POINT_VALUE } from '../game/points'
 import { useDollCollection } from '../hooks/useDollCollection'
@@ -110,7 +110,7 @@ export function PointsExchangeModal({ onClose }: PointsExchangeModalProps) {
                       draggable={false}
                     />
                     <span className="points-exchange-list__meta">
-                      <span className="points-exchange-list__name">No.{doll.index + 1}</span>
+                      <span className="points-exchange-list__name">{getDollDisplayName(doll.index)}</span>
                       <span className="points-exchange-list__count">{doll.count}개 보유</span>
                     </span>
                     <span className="points-exchange-list__rate">
