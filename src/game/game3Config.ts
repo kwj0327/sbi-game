@@ -70,10 +70,31 @@ export const GAME3_DOLLS = {
   /** 경계선 오른쪽 여백 (world %) */
   zoneMarginAfterBoundary: 2,
   zoneMarginRight: 3,
-  /** 1층 인형 중 2층으로 올릴 확률 */
+  /** 1층 인형 중 2층으로 올릴 확률 (fillTwoLayers=false 일 때) */
   topLayerChance: 0,
-  /** 2층 — 1층 위로 올리는 높이 (world %) */
+  /** true — 1·2층 같은 열로 두 줄 꽉 채움 (이미지 풀 개수와 무관) */
+  fillTwoLayers: true,
+  /** 2층 — 1층 위로 올리는 높이 (world %) — fillTwoLayers 아닐 때 */
   stackLiftY: 9.5,
+  /** fillTwoLayers — 2층 발 위치 = 1층 발 + 인형 높이 × 이 비율 */
+  twoLayerNestFrac: 0.88,
+  /**
+   * fillTwoLayers — 1층 가로 밀집 (인형 bbox 폭 대비 다음 중심 간격).
+   * 작을수록 더 겹치며 빽빵 (측면 뷰 기준, 0.5 전후).
+   */
+  twoLayerPackStepFrac: 0.54,
+  /** fillTwoLayers — 배치 x 미세 흔들림 (world %) */
+  twoLayerXJitter: 1.4,
+  /** fillTwoLayers — 2층 x 미세 오프셋 (1층 대비, world %) */
+  twoLayerTopXJitter: 1.6,
+  /** fillTwoLayers — 배치 기울기 최소 (deg). 너무 작으면 다 일자로 서 보임 */
+  twoLayerPlaceRotateMinDeg: 9,
+  /** fillTwoLayers — 배치 기울기 최대 (deg) */
+  twoLayerPlaceRotateMaxDeg: 28,
+  /** fillTwoLayers — 2층 추가 기울기 흔들림 (deg) */
+  twoLayerTopExtraLeanDeg: 7,
+  /** fillTwoLayers — 2층 개수 = 1층 × 이 비율 (0~1, 1층보다 적게) */
+  twoLayerTopRatio: 0.58,
   /** 배치 시 바운딩 박스 사이 추가 여백 (world %) */
   minSpacingGap: 0.6,
   /** 인형 배치 회전 범위 (deg) — 작게 두어 겹침 방지 */
@@ -85,6 +106,16 @@ export const GAME3_DOLLS = {
   /** 오므림 시 집게 중심에서 인식할 실루엣 반경 (디자인 px) */
   gripTipRadiusPx: 10,
 } as const
+
+/** stackLevel별 발 위치 오프셋 (world %, 1층 발 기준 위로) */
+export function getGame3DollStackLiftPercent(stackLevel: 0 | 1): number {
+  if (stackLevel === 0) return 0
+  if (GAME3_DOLLS.fillTwoLayers) {
+    const dollH = (GAME3_DOLLS.emojiSizePx / GAME3_WORLD.height) * 100
+    return dollH * GAME3_DOLLS.twoLayerNestFrac
+  }
+  return GAME3_DOLLS.stackLiftY
+}
 
 /**
  * 잡기 닫힘 — 어깨(윗팔)는 벌린 상태로 고정하므로, 다리(아랫팔)가 인형까지 닿도록

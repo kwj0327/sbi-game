@@ -198,6 +198,9 @@ export type Game2ClawState = {
   /** Game3 — 좌·우 독립 오므림 (둘 다 정의되면 각 팔에 개별 적용) */
   gripTLeft?: number
   gripTRight?: number
+  /** Game3 — 좌·우 어깨(윗팔) 독립 감김 0–1 (0=벌림, 1=완전 감김) */
+  shoulderReachLeft?: number
+  shoulderReachRight?: number
   /** 잡은 순간 인형 중심 − 기본 부착점 (playfield %) — 인형이 제자리에 머물게 보정 */
   heldOffsetX: number
   heldOffsetY: number

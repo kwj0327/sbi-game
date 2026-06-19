@@ -49,20 +49,28 @@ function lerpClawPose(gripT: number): ClawPose {
 
 /**
  * 좌·우 팔 독립 오므림 — Game3 인형 실루엣 맞춤.
- * 어깨(윗팔)·관절 위치·팁은 벌린 상태로 고정하고, 다리(아랫팔)만 gripT로 움직인다.
+ * 기본은 어깨·관절·팁 고정 + 다리만 gripT. shoulderReach* 로 어깨 감김 가능.
  */
-function lerpClawPoseSplit(gripTLeft: number, gripTRight: number): ClawPose {
+function lerpClawPoseSplit(
+  gripTLeft: number,
+  gripTRight: number,
+  shoulderReachLeft = 0,
+  shoulderReachRight = 0,
+): ClawPose {
   const opened = GAME2_CLAW_POSE.open
+  const closed = GAME2_CLAW_POSE.closed
   const tl = Math.min(1, Math.max(0, gripTLeft))
   const tr = Math.min(1, Math.max(0, gripTRight))
+  const srL = Math.min(1, Math.max(0, shoulderReachLeft))
+  const srR = Math.min(1, Math.max(0, shoulderReachRight))
 
   // 어깨 고정 시 다리가 인형까지 닿도록 Game3 전용으로 더 깊이 접는다
   const closedLowerL = GAME3_GRAB.lowerClosedLeftDeg
   const closedLowerR = GAME3_GRAB.lowerClosedRightDeg
 
   return {
-    armLeft: opened.armLeft,
-    armRight: opened.armRight,
+    armLeft: opened.armLeft + (closed.armLeft - opened.armLeft) * srL,
+    armRight: opened.armRight + (closed.armRight - opened.armRight) * srR,
     lowerLeft: closedLowerL + (opened.lowerLeft - closedLowerL) * tl,
     lowerRight: closedLowerR + (opened.lowerRight - closedLowerR) * tr,
     tipShiftLeft: opened.tipShiftLeft,
@@ -89,11 +97,13 @@ export function Game2Claw({
   const gripTLeft = claw?.gripTLeft
   const gripTRight = claw?.gripTRight
   const clawLiftPercent = claw?.clawLiftPercent ?? defaults.clawLiftPercent
+  const shoulderReachLeft = claw?.shoulderReachLeft ?? 0
+  const shoulderReachRight = claw?.shoulderReachRight ?? 0
   const useSplitGrip = gripTLeft !== undefined && gripTRight !== undefined
   const pose = open
     ? GAME2_CLAW_POSE.open
     : useSplitGrip
-      ? lerpClawPoseSplit(gripTLeft, gripTRight)
+      ? lerpClawPoseSplit(gripTLeft, gripTRight, shoulderReachLeft, shoulderReachRight)
       : lerpClawPose(gripT)
 
   const render =

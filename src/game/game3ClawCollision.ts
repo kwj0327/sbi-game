@@ -1,5 +1,5 @@
 import { GAME2_CLAW, GAME2_CLAW_POSE } from './game2Config'
-import { GAME3_CLAW, GAME3_DOLLS, GAME3_GRAB, GAME3_WORLD } from './game3Config'
+import { GAME3_CLAW, GAME3_DOLLS, GAME3_GRAB, GAME3_WORLD, getGame3DollStackLiftPercent } from './game3Config'
 import type { Game3DollState } from './game3PlayArea'
 
 type Rect = { left: number; top: number; right: number; bottom: number }
@@ -48,7 +48,7 @@ function getGame3DollWidthPercent(rotateDeg: number) {
 }
 
 function getGame3DollVisualY(stackLevel: 0 | 1) {
-  return GAME3_WORLD.floorY - stackLevel * GAME3_DOLLS.stackLiftY
+  return GAME3_WORLD.floorY - getGame3DollStackLiftPercent(stackLevel)
 }
 
 function rectsOverlap(a: Rect, b: Rect) {
@@ -271,15 +271,21 @@ export function getGame3ClawHitboxes(
   }
 }
 
+export type Game3LegPoseOptions = {
+  shoulderLeftDeg?: number
+  shoulderRightDeg?: number
+}
+
 /**
  * 임의 그립(gripTLeft/Right)에서 좌·우 다리(아랫팔) 박스 (world %).
- * 어깨·관절 고정, 다리만 gripT로 움직임 — 렌더(lerpClawPoseSplit)와 동기.
+ * 어깨·관절 고정(또는 shoulder*Deg 지정), 다리만 gripT로 움직임 — 렌더(lerpClawPoseSplit)와 동기.
  */
 export function getGame3LowerLegRects(
   clawXPercent: number,
   clawLiftPercent: number,
   gripTLeft: number,
   gripTRight: number,
+  legPose: Game3LegPoseOptions = {},
 ): { left: Rect; right: Rect } {
   const frame = getRigFrame(clawXPercent, clawLiftPercent)
   const opened = GAME2_CLAW_POSE.open
@@ -287,18 +293,20 @@ export function getGame3LowerLegRects(
   const tr = clamp(gripTRight, 0, 1)
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t
   const jointTopFrac = opened.jointTop / 100
+  const armLeft = legPose.shoulderLeftDeg ?? opened.armLeft
+  const armRight = legPose.shoulderRightDeg ?? opened.armRight
 
   const left = getArmSegmentRects(
     frame,
     RIG.armLeftX,
-    opened.armLeft,
+    armLeft,
     lerp(GAME3_GRAB.lowerClosedLeftDeg, opened.lowerLeft, tl),
     jointTopFrac,
   )
   const right = getArmSegmentRects(
     frame,
     RIG.armRightX,
-    opened.armRight,
+    armRight,
     lerp(GAME3_GRAB.lowerClosedRightDeg, opened.lowerRight, tr),
     jointTopFrac,
   )

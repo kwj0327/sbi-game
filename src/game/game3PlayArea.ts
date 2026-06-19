@@ -6,6 +6,7 @@ import {
   getGame3ClawHorizontalReach,
   getGame3ClawTipPoints,
   getGame3LowerLegRects,
+  type Game3LegPoseOptions,
   type Game3Rect,
 } from './game3ClawCollision'
 import {
@@ -29,6 +30,7 @@ import {
   GAME3_GUIDE,
   GAME3_PHYSICS,
   GAME3_WORLD,
+  getGame3DollStackLiftPercent,
 } from './game3Config'
 
 export { getGame3ClawHitboxes, getGame3ClawTipInnerXPercent, resolveGame3DescentStop } from './game3ClawCollision'
@@ -397,7 +399,7 @@ export function measureGame3GrabbedPartWidthPx(
 }
 
 export function getGame3DollVisualY(stackLevel: 0 | 1) {
-  return GAME3_WORLD.floorY - stackLevel * GAME3_DOLLS.stackLiftY
+  return GAME3_WORLD.floorY - getGame3DollStackLiftPercent(stackLevel)
 }
 
 export type Game3ClawXClampOptions = {
@@ -539,7 +541,186 @@ export function getGame3ScrollLeftPx(
   return clamp(target, 0, worldWidthPx - viewportWidthPx)
 }
 
-/** 빨간 경계선 오른쪽부터 배경 끝까지 균등하게 한 줄 채우기 */
+type Game3DollRowLayout = {
+  count: number
+  step: number
+  startX: number
+}
+
+/** 한 층에 들어가는 최대 개수·균등 간격 */
+function computeGame3DollRowLayout(
+  zoneLeft: number,
+  zoneRight: number,
+  dollW: number,
+  gap: number,
+): Game3DollRowLayout {
+  const halfDollW = dollW / 2
+  const rowWidth = zoneRight - zoneLeft
+
+  if (rowWidth < dollW) {
+    return { count: 0, step: 0, startX: (zoneLeft + zoneRight) / 2 }
+  }
+
+  const count = Math.max(1, Math.floor((rowWidth + gap) / (dollW + gap)))
+  const usableSpan = rowWidth - dollW
+  const step = count > 1 ? usableSpan / (count - 1) : 0
+  const startX = count > 1 ? zoneLeft + halfDollW : zoneLeft + rowWidth / 2
+
+  return { count, step, startX }
+}
+
+function makeGame3PlacedDoll(
+  imagePool: readonly string[],
+  xPercent: number,
+  stackLevel: 0 | 1,
+  supportId: number | null,
+  pose?: { rotateDeg: number; faceScaleX: number },
+): Game3DollState {
+  if (pose) {
+    return {
+      id: nextDollId++,
+      imageSrc: pickRandomImage(imagePool),
+      xPercent,
+      rotateDeg: pose.rotateDeg,
+      faceScaleX: pose.faceScaleX,
+      stackLevel,
+      supportId,
+      captured: false,
+      falling: false,
+    }
+  }
+
+  const maxRotate = GAME3_DOLLS.fillTwoLayers
+    ? GAME3_DOLLS.twoLayerPlaceRotateMaxDeg
+    : GAME3_DOLLS.placeRotateDeg
+  return {
+    id: nextDollId++,
+    imageSrc: pickRandomImage(imagePool),
+    xPercent,
+    rotateDeg:
+      maxRotate > 0 ? randomBetween(-maxRotate, maxRotate) : 0,
+    faceScaleX: Math.random() < 0.5 ? -1 : 1,
+    stackLevel,
+    supportId,
+    captured: false,
+    falling: false,
+  }
+}
+
+/** fillTwoLayers — 기울기·좌우 반전 완전 랜덤 */
+function randomNaturalGame3DollPose(stackLevel: 0 | 1): {
+  rotateDeg: number
+  faceScaleX: number
+} {
+  const {
+    twoLayerPlaceRotateMinDeg: minDeg,
+    twoLayerPlaceRotateMaxDeg: maxDeg,
+    twoLayerTopExtraLeanDeg: topExtra,
+  } = GAME3_DOLLS
+
+  const leanSign = Math.random() < 0.5 ? -1 : 1
+  let rotateDeg = leanSign * randomBetween(minDeg, maxDeg) + randomBetween(-5, 5)
+
+  if (stackLevel === 1) {
+    rotateDeg += randomBetween(-topExtra, topExtra)
+  }
+
+  rotateDeg = clamp(rotateDeg, -maxDeg - topExtra, maxDeg + topExtra)
+
+  return {
+    rotateDeg,
+    faceScaleX: Math.random() < 0.5 ? -1 : 1,
+  }
+}
+
+function getGame3DollPackStepPercent(rotateDeg: number) {
+  return getGame3DollWidthPercent(rotateDeg) * GAME3_DOLLS.twoLayerPackStepFrac
+}
+
+/** fillTwoLayers — 1층을 왼쪽부터 빽빵하게 채움 (측면 뷰 겹침 허용) */
+function generateDenseGame3FloorLayer(
+  imagePool: readonly string[],
+  zoneLeft: number,
+  zoneRight: number,
+): Game3DollState[] {
+  const { twoLayerXJitter: xJitter } = GAME3_DOLLS
+  const floorDolls: Game3DollState[] = []
+  let cursorX = zoneLeft
+
+  while (cursorX < zoneRight) {
+    const pose = randomNaturalGame3DollPose(0)
+    const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
+    const jitter = xJitter > 0 ? randomBetween(-xJitter, xJitter) : 0
+    let xPercent = cursorX + halfW + jitter
+
+    const minX = zoneLeft + halfW
+    const maxX = zoneRight - halfW
+    if (xPercent > maxX + halfW * 0.35) break
+    xPercent = clamp(xPercent, minX, maxX)
+
+    floorDolls.push(makeGame3PlacedDoll(imagePool, xPercent, 0, null, pose))
+    cursorX += getGame3DollPackStepPercent(pose.rotateDeg)
+  }
+
+  if (floorDolls.length === 0) {
+    const pose = randomNaturalGame3DollPose(0)
+    const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
+    floorDolls.push(
+      makeGame3PlacedDoll(
+        imagePool,
+        clamp((zoneLeft + zoneRight) / 2, zoneLeft + halfW, zoneRight - halfW),
+        0,
+        null,
+        pose,
+      ),
+    )
+  }
+
+  return floorDolls
+}
+
+/** fillTwoLayers — 1층 일부 위에만 2층 (개수 < 1층) */
+function generateDenseGame3TopLayer(
+  imagePool: readonly string[],
+  floorDolls: readonly Game3DollState[],
+  zoneLeft: number,
+  zoneRight: number,
+): Game3DollState[] {
+  const { twoLayerTopXJitter: topJitter, twoLayerTopRatio } = GAME3_DOLLS
+
+  if (floorDolls.length === 0) return []
+
+  const topCount = Math.min(
+    floorDolls.length,
+    Math.max(1, Math.round(floorDolls.length * twoLayerTopRatio)),
+  )
+
+  const supports: Game3DollState[] = []
+  if (topCount >= floorDolls.length) {
+    supports.push(...floorDolls)
+  } else if (topCount === 1) {
+    supports.push(floorDolls[Math.floor(floorDolls.length / 2)]!)
+  } else {
+    for (let i = 0; i < topCount; i += 1) {
+      const idx = Math.round((i * (floorDolls.length - 1)) / (topCount - 1))
+      supports.push(floorDolls[idx]!)
+    }
+  }
+
+  return supports.map((floor) => {
+    const pose = randomNaturalGame3DollPose(1)
+    const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
+    const jitter = topJitter > 0 ? randomBetween(-topJitter, topJitter) : 0
+    const xPercent = clamp(
+      floor.xPercent + jitter,
+      zoneLeft + halfW,
+      zoneRight - halfW,
+    )
+    return makeGame3PlacedDoll(imagePool, xPercent, 1, floor.id, pose)
+  })
+}
+
+/** 빨간 경계선 오른쪽부터 배경 끝까지 채우기 (fillTwoLayers: 1·2층 빽빵) */
 export function createRandomGame3Dolls(
   imagePool: readonly string[],
   boundaryX = GAME3_GUIDE.giftBoxBoundaryX,
@@ -548,38 +729,21 @@ export function createRandomGame3Dolls(
 
   const zoneLeft = boundaryX + GAME3_DOLLS.zoneMarginAfterBoundary
   const zoneRight = 100 - GAME3_DOLLS.zoneMarginRight
-  const zoneWidth = zoneRight - zoneLeft
+
+  if (GAME3_DOLLS.fillTwoLayers) {
+    const floorDolls = generateDenseGame3FloorLayer(imagePool, zoneLeft, zoneRight)
+    const topDolls = generateDenseGame3TopLayer(imagePool, floorDolls, zoneLeft, zoneRight)
+    return [...floorDolls, ...topDolls]
+  }
 
   const gap = GAME3_DOLLS.minSpacingGap
-  // 회전 최대치 기준 폭으로 간격을 잡아 겹침을 방지
   const dollW = getGame3DollWidthPercent(GAME3_DOLLS.placeRotateDeg)
-  const halfDollW = dollW / 2
-
-  // 영역에 들어가는 최대 개수 (양 끝이 영역 안에 들어오도록)
-  const count = Math.max(1, Math.floor((zoneWidth + gap) / (dollW + gap)))
-
-  const usableSpan = zoneWidth - dollW
-  const step = count > 1 ? usableSpan / (count - 1) : 0
-  const startX = count > 1 ? zoneLeft + halfDollW : zoneLeft + zoneWidth / 2
-
+  const floorLayout = computeGame3DollRowLayout(zoneLeft, zoneRight, dollW, gap)
   const floorDolls: Game3DollState[] = []
 
-  for (let i = 0; i < count; i += 1) {
-    const rotateDeg = randomBetween(
-      -GAME3_DOLLS.placeRotateDeg,
-      GAME3_DOLLS.placeRotateDeg,
-    )
-    floorDolls.push({
-      id: nextDollId++,
-      imageSrc: pickRandomImage(imagePool),
-      xPercent: startX + step * i,
-      rotateDeg,
-      faceScaleX: Math.random() < 0.5 ? -1 : 1,
-      stackLevel: 0,
-      supportId: null,
-      captured: false,
-      falling: false,
-    })
+  for (let i = 0; i < floorLayout.count; i += 1) {
+    const xPercent = floorLayout.startX + floorLayout.step * i
+    floorDolls.push(makeGame3PlacedDoll(imagePool, xPercent, 0, null))
   }
 
   return floorDolls
@@ -735,15 +899,15 @@ function limbBlockedAtGripT(
   gripTLeft: number,
   gripTRight: number,
   dolls: readonly Game3DollState[],
+  legPose: Game3LegPoseOptions = {},
 ): boolean {
   const lift = claw.clawLiftPercent ?? 0
-  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
+  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight, legPose)
   const lowerBox = side === 'left' ? legs.left : legs.right
   const part = rectToBoundary(lowerBox)
 
-  const otherLegs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
   const otherPart = rectToBoundary(
-    side === 'left' ? otherLegs.right : otherLegs.left,
+    side === 'left' ? legs.right : legs.left,
   )
 
   return dolls.some((doll) => {
@@ -773,6 +937,7 @@ function findLastSafeLegGripT(
   otherGt: number,
   claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
   dolls: readonly Game3DollState[],
+  legPose: Game3LegPoseOptions = {},
 ): number {
   let lo = Math.min(penetratesGt, safeGt)
   let hi = Math.max(penetratesGt, safeGt)
@@ -780,7 +945,27 @@ function findLastSafeLegGripT(
     const mid = (lo + hi) / 2
     const testLeft = side === 'left' ? mid : otherGt
     const testRight = side === 'right' ? mid : otherGt
-    if (limbBlockedAtGripT(side, claw, testLeft, testRight, dolls)) lo = mid
+    if (limbBlockedAtGripT(side, claw, testLeft, testRight, dolls, legPose)) lo = mid
+    else hi = mid
+  }
+  return hi
+}
+
+function findMostClosedSafeLegGripT(
+  side: 'left' | 'right',
+  otherGt: number,
+  maxGt: number,
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  dolls: readonly Game3DollState[],
+  legPose: Game3LegPoseOptions = {},
+): number {
+  let lo = 0
+  let hi = maxGt
+  for (let i = 0; i < 14; i += 1) {
+    const mid = (lo + hi) / 2
+    const testLeft = side === 'left' ? mid : otherGt
+    const testRight = side === 'right' ? mid : otherGt
+    if (limbBlockedAtGripT(side, claw, testLeft, testRight, dolls, legPose)) lo = mid
     else hi = mid
   }
   return hi
@@ -794,20 +979,31 @@ function stepGame3LegGripT(
   dolls: readonly Game3DollState[],
   closeRate: number,
   stopped: boolean,
+  legPose: Game3LegPoseOptions = {},
 ): { gt: number; stopped: boolean } {
-  if (stopped || currentGt <= 0) return { gt: currentGt, stopped: true }
+  if (currentGt <= 0) return { gt: currentGt, stopped: true }
 
-  if (limbBlockedAtGripT(side, claw, currentGt, otherGt, dolls)) {
-    const opened = findLastSafeLegGripT(side, currentGt, 1, otherGt, claw, dolls)
+  // 한쪽만 먼저 닿아 멈췄다가, 반대쪽도 같은 인형에 닿으면 다시 닫기 재개
+  if (stopped) {
+    const nextGt = Math.max(0, currentGt - closeRate)
+    if (nextGt >= currentGt - 1e-6) return { gt: currentGt, stopped: true }
+    if (!limbBlockedAtGripT(side, claw, nextGt, otherGt, dolls, legPose)) {
+      return { gt: nextGt, stopped: nextGt <= 0 }
+    }
+    return { gt: currentGt, stopped: true }
+  }
+
+  if (limbBlockedAtGripT(side, claw, currentGt, otherGt, dolls, legPose)) {
+    const opened = findLastSafeLegGripT(side, currentGt, 1, otherGt, claw, dolls, legPose)
     return { gt: opened, stopped: true }
   }
 
   const nextGt = Math.max(0, currentGt - closeRate)
-  if (!limbBlockedAtGripT(side, claw, nextGt, otherGt, dolls)) {
+  if (!limbBlockedAtGripT(side, claw, nextGt, otherGt, dolls, legPose)) {
     return { gt: nextGt, stopped: nextGt <= 0 }
   }
 
-  const safeGt = findLastSafeLegGripT(side, nextGt, currentGt, otherGt, claw, dolls)
+  const safeGt = findLastSafeLegGripT(side, nextGt, currentGt, otherGt, claw, dolls, legPose)
   return { gt: safeGt, stopped: true }
 }
 
@@ -877,9 +1073,10 @@ export function findGame3HookedDollId(
   gripTRight: number,
   dolls: readonly Game3DollState[],
   preferredId: number | null,
+  legPose: Game3LegPoseOptions = {},
 ): number | null {
   const isHooked = (doll: Game3DollState) =>
-    doesGame3GripGraspDoll(claw, gripTLeft, gripTRight, doll)
+    doesGame3GripGraspDoll(claw, gripTLeft, gripTRight, doll, legPose)
 
   if (preferredId !== null) {
     const preferred = getGame3DollById(dolls, preferredId)
@@ -901,6 +1098,194 @@ export function findGame3HookedDollId(
     }
   }
   return bestId
+}
+
+function shoulderReachToDeg(reach: number, side: 'left' | 'right'): number {
+  const opened = GAME2_CLAW_POSE.open
+  const closed = GAME2_CLAW_POSE.closed
+  const r = clamp(reach, 0, 1)
+  const openDeg = side === 'left' ? opened.armLeft : opened.armRight
+  const closedDeg = side === 'left' ? closed.armLeft : closed.armRight
+  return openDeg + (closedDeg - openDeg) * r
+}
+
+export function legPoseFromShoulderReach(
+  reachLeft: number,
+  reachRight: number,
+): Game3LegPoseOptions {
+  return {
+    shoulderLeftDeg: shoulderReachToDeg(reachLeft, 'left'),
+    shoulderRightDeg: shoulderReachToDeg(reachRight, 'right'),
+  }
+}
+
+function tightenGripTsForTarget(
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent'>,
+  dolls: readonly Game3DollState[],
+  startLeft: number,
+  startRight: number,
+  legPose: Game3LegPoseOptions,
+): { gripTLeft: number; gripTRight: number } {
+  let gripTLeft = startLeft
+  let gripTRight = startRight
+  for (let pass = 0; pass < 8; pass += 1) {
+    const nextLeft = findMostClosedSafeLegGripT(
+      'left',
+      gripTRight,
+      gripTLeft,
+      claw,
+      dolls,
+      legPose,
+    )
+    const nextRight = findMostClosedSafeLegGripT(
+      'right',
+      nextLeft,
+      gripTRight,
+      claw,
+      dolls,
+      legPose,
+    )
+    if (
+      Math.abs(nextLeft - gripTLeft) < 1e-4 &&
+      Math.abs(nextRight - gripTRight) < 1e-4
+    ) {
+      break
+    }
+    gripTLeft = nextLeft
+    gripTRight = nextRight
+  }
+  return { gripTLeft, gripTRight }
+}
+
+export type Game3SplitGraspRecoveryResult = {
+  xPercent: number
+  clawTiltDeg: number
+  gripTLeft: number
+  gripTRight: number
+  shoulderReachLeft: number
+  shoulderReachRight: number
+  hitId: number | null
+}
+
+/**
+ * 양쪽 다리가 서로 다른 인형에 걸린 뒤 — 인형 영역을 넘지 않는 선에서
+ * 다리·어깨·위치를 조정해 파지를 시도한다. 실패 시 hitId=null.
+ */
+export function attemptGame3SplitGraspRecovery(
+  claw: Pick<Game2ClawState, 'xPercent' | 'clawLiftPercent' | 'clawTiltDeg'>,
+  gripTLeft: number,
+  gripTRight: number,
+  dolls: readonly Game3DollState[],
+  leftDollId: number | null,
+  rightDollId: number | null,
+  preferredId: number | null,
+): Game3SplitGraspRecoveryResult {
+  const testClawBase = {
+    xPercent: claw.xPercent,
+    clawLiftPercent: claw.clawLiftPercent ?? 0,
+  }
+  const openLegPose = legPoseFromShoulderReach(0, 0)
+  const initialTight = tightenGripTsForTarget(
+    testClawBase,
+    dolls,
+    gripTLeft,
+    gripTRight,
+    openLegPose,
+  )
+  gripTLeft = initialTight.gripTLeft
+  gripTRight = initialTight.gripTRight
+
+  const base: Game3SplitGraspRecoveryResult = {
+    xPercent: claw.xPercent,
+    clawTiltDeg: claw.clawTiltDeg ?? 0,
+    gripTLeft,
+    gripTRight,
+    shoulderReachLeft: 0,
+    shoulderReachRight: 0,
+    hitId: null,
+  }
+
+  const candidateIds: number[] = []
+  if (preferredId !== null) candidateIds.push(preferredId)
+  if (leftDollId !== null && !candidateIds.includes(leftDollId)) {
+    candidateIds.push(leftDollId)
+  }
+  if (rightDollId !== null && !candidateIds.includes(rightDollId)) {
+    candidateIds.push(rightDollId)
+  }
+
+  for (const dollId of candidateIds) {
+    const doll = getGame3DollById(dolls, dollId)
+    if (!doll || doll.captured || doll.falling) continue
+    if (
+      doesGame3GripGraspDoll(testClawBase, gripTLeft, gripTRight, doll, openLegPose)
+    ) {
+      return { ...base, hitId: dollId }
+    }
+  }
+
+  const xOffsets =
+    leftDollId !== null && rightDollId !== null && leftDollId !== rightDollId
+      ? [-2.5, -1.5, -0.75, 0, 0.75, 1.5, 2.5]
+      : [0]
+  const shoulderTrials: [number, number][] = [
+    [0, 0],
+    [0.18, 0],
+    [0, 0.18],
+    [0.32, 0],
+    [0, 0.32],
+    [0.24, 0.24],
+  ]
+
+  for (const dollId of candidateIds) {
+    const doll = getGame3DollById(dolls, dollId)
+    if (!doll || doll.captured || doll.falling) continue
+
+    for (const xOff of xOffsets) {
+      const xPercent = clampGame3ClawXPercent(claw.xPercent + xOff, {
+        clawLiftPercent: claw.clawLiftPercent ?? 0,
+        gripTLeft,
+        gripTRight,
+        clawTiltDeg: claw.clawTiltDeg ?? 0,
+      })
+      const testClaw = {
+        xPercent,
+        clawLiftPercent: claw.clawLiftPercent ?? 0,
+      }
+
+      for (const [shoulderReachLeft, shoulderReachRight] of shoulderTrials) {
+        const legPose = legPoseFromShoulderReach(shoulderReachLeft, shoulderReachRight)
+        const tightened = tightenGripTsForTarget(
+          testClaw,
+          dolls,
+          gripTLeft,
+          gripTRight,
+          legPose,
+        )
+        if (
+          doesGame3GripGraspDoll(
+            testClaw,
+            tightened.gripTLeft,
+            tightened.gripTRight,
+            doll,
+            legPose,
+          )
+        ) {
+          return {
+            xPercent,
+            clawTiltDeg: claw.clawTiltDeg ?? 0,
+            gripTLeft: tightened.gripTLeft,
+            gripTRight: tightened.gripTRight,
+            shoulderReachLeft,
+            shoulderReachRight,
+            hitId: dollId,
+          }
+        }
+      }
+    }
+  }
+
+  return base
 }
 
 /** @deprecated stepGame3ClawCloseSplit — 프레임 단위 접촉 닫기 사용 */
@@ -1173,9 +1558,10 @@ export function doesGame3GripGraspDoll(
   gripTLeft: number,
   gripTRight: number,
   doll: Game3DollState,
+  legPose: Game3LegPoseOptions = {},
 ): boolean {
   const lift = claw.clawLiftPercent ?? 0
-  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight)
+  const legs = getGame3LowerLegRects(claw.xPercent, lift, gripTLeft, gripTRight, legPose)
   return evaluateGame3GripGrasp(
     rectToBoundary(legs.left),
     rectToBoundary(legs.right),
