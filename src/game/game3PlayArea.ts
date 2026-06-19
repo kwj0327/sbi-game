@@ -541,34 +541,6 @@ export function getGame3ScrollLeftPx(
   return clamp(target, 0, worldWidthPx - viewportWidthPx)
 }
 
-type Game3DollRowLayout = {
-  count: number
-  step: number
-  startX: number
-}
-
-/** 한 층에 들어가는 최대 개수·균등 간격 */
-function computeGame3DollRowLayout(
-  zoneLeft: number,
-  zoneRight: number,
-  dollW: number,
-  gap: number,
-): Game3DollRowLayout {
-  const halfDollW = dollW / 2
-  const rowWidth = zoneRight - zoneLeft
-
-  if (rowWidth < dollW) {
-    return { count: 0, step: 0, startX: (zoneLeft + zoneRight) / 2 }
-  }
-
-  const count = Math.max(1, Math.floor((rowWidth + gap) / (dollW + gap)))
-  const usableSpan = rowWidth - dollW
-  const step = count > 1 ? usableSpan / (count - 1) : 0
-  const startX = count > 1 ? zoneLeft + halfDollW : zoneLeft + rowWidth / 2
-
-  return { count, step, startX }
-}
-
 function makeGame3PlacedDoll(
   imagePool: readonly string[],
   xPercent: number,
@@ -608,24 +580,21 @@ function makeGame3PlacedDoll(
 }
 
 /** fillTwoLayers — 기울기·좌우 반전 완전 랜덤 */
-function randomNaturalGame3DollPose(stackLevel: 0 | 1): {
+function randomNaturalGame3DollPose(): {
   rotateDeg: number
   faceScaleX: number
 } {
   const {
     twoLayerPlaceRotateMinDeg: minDeg,
     twoLayerPlaceRotateMaxDeg: maxDeg,
-    twoLayerTopExtraLeanDeg: topExtra,
   } = GAME3_DOLLS
 
   const leanSign = Math.random() < 0.5 ? -1 : 1
-  let rotateDeg = leanSign * randomBetween(minDeg, maxDeg) + randomBetween(-5, 5)
-
-  if (stackLevel === 1) {
-    rotateDeg += randomBetween(-topExtra, topExtra)
-  }
-
-  rotateDeg = clamp(rotateDeg, -maxDeg - topExtra, maxDeg + topExtra)
+  const rotateDeg = clamp(
+    leanSign * randomBetween(minDeg, maxDeg) + randomBetween(-5, 5),
+    -maxDeg,
+    maxDeg,
+  )
 
   return {
     rotateDeg,
@@ -648,7 +617,7 @@ function generateDenseGame3FloorLayer(
   let cursorX = zoneLeft
 
   while (cursorX < zoneRight) {
-    const pose = randomNaturalGame3DollPose(0)
+    const pose = randomNaturalGame3DollPose()
     const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
     const jitter = xJitter > 0 ? randomBetween(-xJitter, xJitter) : 0
     let xPercent = cursorX + halfW + jitter
@@ -663,7 +632,7 @@ function generateDenseGame3FloorLayer(
   }
 
   if (floorDolls.length === 0) {
-    const pose = randomNaturalGame3DollPose(0)
+    const pose = randomNaturalGame3DollPose()
     const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
     floorDolls.push(
       makeGame3PlacedDoll(
@@ -679,48 +648,7 @@ function generateDenseGame3FloorLayer(
   return floorDolls
 }
 
-/** fillTwoLayers — 1층 일부 위에만 2층 (개수 < 1층) */
-function generateDenseGame3TopLayer(
-  imagePool: readonly string[],
-  floorDolls: readonly Game3DollState[],
-  zoneLeft: number,
-  zoneRight: number,
-): Game3DollState[] {
-  const { twoLayerTopXJitter: topJitter, twoLayerTopRatio } = GAME3_DOLLS
-
-  if (floorDolls.length === 0) return []
-
-  const topCount = Math.min(
-    floorDolls.length,
-    Math.max(1, Math.round(floorDolls.length * twoLayerTopRatio)),
-  )
-
-  const supports: Game3DollState[] = []
-  if (topCount >= floorDolls.length) {
-    supports.push(...floorDolls)
-  } else if (topCount === 1) {
-    supports.push(floorDolls[Math.floor(floorDolls.length / 2)]!)
-  } else {
-    for (let i = 0; i < topCount; i += 1) {
-      const idx = Math.round((i * (floorDolls.length - 1)) / (topCount - 1))
-      supports.push(floorDolls[idx]!)
-    }
-  }
-
-  return supports.map((floor) => {
-    const pose = randomNaturalGame3DollPose(1)
-    const halfW = getGame3DollWidthPercent(pose.rotateDeg) / 2
-    const jitter = topJitter > 0 ? randomBetween(-topJitter, topJitter) : 0
-    const xPercent = clamp(
-      floor.xPercent + jitter,
-      zoneLeft + halfW,
-      zoneRight - halfW,
-    )
-    return makeGame3PlacedDoll(imagePool, xPercent, 1, floor.id, pose)
-  })
-}
-
-/** 빨간 경계선 오른쪽부터 배경 끝까지 채우기 (fillTwoLayers: 1·2층 빽빵) */
+/** 빨간 경계선 오른쪽부터 배경 끝까지 1층만 채움 */
 export function createRandomGame3Dolls(
   imagePool: readonly string[],
   boundaryX = GAME3_GUIDE.giftBoxBoundaryX,
@@ -730,23 +658,7 @@ export function createRandomGame3Dolls(
   const zoneLeft = boundaryX + GAME3_DOLLS.zoneMarginAfterBoundary
   const zoneRight = 100 - GAME3_DOLLS.zoneMarginRight
 
-  if (GAME3_DOLLS.fillTwoLayers) {
-    const floorDolls = generateDenseGame3FloorLayer(imagePool, zoneLeft, zoneRight)
-    const topDolls = generateDenseGame3TopLayer(imagePool, floorDolls, zoneLeft, zoneRight)
-    return [...floorDolls, ...topDolls]
-  }
-
-  const gap = GAME3_DOLLS.minSpacingGap
-  const dollW = getGame3DollWidthPercent(GAME3_DOLLS.placeRotateDeg)
-  const floorLayout = computeGame3DollRowLayout(zoneLeft, zoneRight, dollW, gap)
-  const floorDolls: Game3DollState[] = []
-
-  for (let i = 0; i < floorLayout.count; i += 1) {
-    const xPercent = floorLayout.startX + floorLayout.step * i
-    floorDolls.push(makeGame3PlacedDoll(imagePool, xPercent, 0, null))
-  }
-
-  return floorDolls
+  return generateDenseGame3FloorLayer(imagePool, zoneLeft, zoneRight)
 }
 
 export function getGame3DollById(dolls: readonly Game3DollState[], id: number | null) {

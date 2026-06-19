@@ -72,8 +72,8 @@ export const GAME3_DOLLS = {
   zoneMarginRight: 3,
   /** 1층 인형 중 2층으로 올릴 확률 (fillTwoLayers=false 일 때) */
   topLayerChance: 0,
-  /** true — 1·2층 같은 열로 두 줄 꽉 채움 (이미지 풀 개수와 무관) */
-  fillTwoLayers: true,
+  /** true — 1층 위에 2층 추가 (false — 1층만) */
+  fillTwoLayers: false,
   /** 2층 — 1층 위로 올리는 높이 (world %) — fillTwoLayers 아닐 때 */
   stackLiftY: 9.5,
   /** fillTwoLayers — 2층 발 위치 = 1층 발 + 인형 높이 × 이 비율 */
