@@ -39,8 +39,9 @@ function mobileLanUrlPlugin(): Plugin {
   }
 }
 
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'sbi-game'
-const base = process.env.GITHUB_PAGES === 'true' ? `/${repoName}/` : '/'
+/** GitHub Pages 배포 경로 — https://kwj0327.github.io/Doll-Game/ */
+const GITHUB_PAGES_REPO = 'Doll-Game'
+const base = process.env.GITHUB_PAGES === 'true' ? `/${GITHUB_PAGES_REPO}/` : '/'
 
 export default defineConfig({
   base,

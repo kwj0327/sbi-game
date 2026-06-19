@@ -1,6 +1,6 @@
-# SBI Game
+# Doll Game
 
-SBI 저축은행 미니게임 웹앱 (React + Vite)
+인형 뽑기 미니게임 웹앱 (React + Vite)
 
 ## 로컬 실행
 
@@ -15,5 +15,7 @@ npm run dev
 
 `main` 브랜치에 push하면 GitHub Actions가 자동 배포합니다.
 
-- 배포 URL: `https://<GitHub-username>.github.io/sbi-game/`
-- GitHub 저장소 **Settings → Pages → Build and deployment → Source** 가 **GitHub Actions** 인지 확인
+- 배포 URL: **https://kwj0327.github.io/Doll-Game/**
+- GitHub 저장소 이름도 **`Doll-Game`** 이어야 위 URL과 일치합니다.
+- GitHub 저장소 **Settings → General → Repository name** 에서 `Doll-Game`으로 변경
+- **Settings → Pages → Build and deployment → Source** 가 **GitHub Actions** 인지 확인
