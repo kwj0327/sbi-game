@@ -3,6 +3,8 @@ import type { Game2ClawRender } from './game2PlayArea'
 import {
   resolveGame3DescentStop,
   getGame3ClawHitboxes,
+  getGame3ClawHorizontalReach,
+  getGame3ClawTipPoints,
   getGame3LowerLegRects,
   type Game3Rect,
 } from './game3ClawCollision'
@@ -398,9 +400,103 @@ export function getGame3DollVisualY(stackLevel: 0 | 1) {
   return GAME3_WORLD.floorY - stackLevel * GAME3_DOLLS.stackLiftY
 }
 
-export function moveGame3ClawX(xPercent: number, direction: 'left' | 'right') {
+export type Game3ClawXClampOptions = {
+  clawLiftPercent?: number
+  gripTLeft?: number
+  gripTRight?: number
+  clawTiltDeg?: number
+  /** 빨간 경계선(플레이 존) 진입 후 — idle 중 배출구 쪽 재진입 불가 */
+  playBoundaryLocked?: boolean
+}
+
+function getGame3ClawReachFromClampOptions(options: Game3ClawXClampOptions = {}) {
+  return getGame3ClawHorizontalReach(
+    options.clawLiftPercent ?? 0,
+    options.gripTLeft ?? 1,
+    options.gripTRight ?? 1,
+    options.clawTiltDeg ?? 0,
+  )
+}
+
+/** 집게 왼쪽 끝이 빨간 경계선에 닿거나 넘어섰는지 (중심만 넘을 때 minX가 튀지 않도록) */
+export function hasGame3ClawCrossedPlayBoundary(
+  xPercent: number,
+  options: Game3ClawXClampOptions = {},
+) {
+  const { left } = getGame3ClawReachFromClampOptions(options)
+  return xPercent - left >= GAME3_GUIDE.giftBoxBoundaryX
+}
+
+function getGame3PlayBoundaryMinCenter(options: Game3ClawXClampOptions = {}) {
+  const { left } = getGame3ClawReachFromClampOptions(options)
+  return GAME3_GUIDE.giftBoxBoundaryX + left
+}
+
+/** 집게 중심 xPercent 허용 범위 — 몸통·다리·팁이 playfield 안에 들어오도록 */
+export function getGame3ClawXBounds(options: Game3ClawXClampOptions = {}) {
+  const {
+    clawLiftPercent = 0,
+    gripTLeft = 1,
+    gripTRight = 1,
+    clawTiltDeg = 0,
+    playBoundaryLocked = false,
+  } = options
+  const reach = getGame3ClawHorizontalReach(
+    clawLiftPercent,
+    gripTLeft,
+    gripTRight,
+    clawTiltDeg,
+  )
+  const edge = GAME3_CLAW.playfieldEdgeMargin
+  const playRight = 100 - GAME3_DOLLS.zoneMarginRight
+  let minCenter = Math.max(GAME3_CLAW.minX, edge + reach.left)
+  if (playBoundaryLocked) {
+    minCenter = Math.max(minCenter, getGame3PlayBoundaryMinCenter(options))
+  }
+  const maxCenter = Math.min(GAME3_CLAW.maxX, playRight - reach.right)
+  return { min: minCenter, max: Math.max(minCenter, maxCenter) }
+}
+
+export function clampGame3ClawXPercent(
+  xPercent: number,
+  options: Game3ClawXClampOptions = {},
+) {
+  const { min, max } = getGame3ClawXBounds(options)
+  return clamp(xPercent, min, max)
+}
+
+export function moveGame3ClawX(
+  xPercent: number,
+  direction: 'left' | 'right',
+  options: Game3ClawXClampOptions = {},
+) {
   const step = direction === 'left' ? -GAME3_CLAW.moveStepX : GAME3_CLAW.moveStepX
-  return clamp(xPercent + step, GAME3_CLAW.minX, GAME3_CLAW.maxX)
+  return clampGame3ClawXPercent(xPercent + step, options)
+}
+
+/** 좌우 이동 + 플레이 경계 잠금 갱신 (한 번 넘으면 하강·복귀 전까지 배출구 쪽 불가) */
+export function moveGame3ClawXWithPlayLock(
+  xPercent: number,
+  direction: 'left' | 'right',
+  options: Game3ClawXClampOptions & { playBoundaryLocked?: boolean } = {},
+) {
+  const step = direction === 'left' ? -GAME3_CLAW.moveStepX : GAME3_CLAW.moveStepX
+  const wasLocked = options.playBoundaryLocked ?? false
+  let playBoundaryLocked = wasLocked
+  const next = xPercent + step
+
+  if (!playBoundaryLocked && hasGame3ClawCrossedPlayBoundary(next, options)) {
+    playBoundaryLocked = true
+  }
+
+  // 잠금이 걸린 그 프레임(오른쪽 진입)에는 minX를 바로 올리지 않음 — 한 칸씩 이동 유지
+  const justLockedOnRight = playBoundaryLocked && !wasLocked && direction === 'right'
+  const xPercentNext = clampGame3ClawXPercent(next, {
+    ...options,
+    playBoundaryLocked: playBoundaryLocked && !justLockedOnRight,
+  })
+
+  return { xPercent: xPercentNext, playBoundaryLocked }
 }
 
 /** 🟡 배출구 영역 bounds (world %) */
@@ -875,19 +971,9 @@ export type Game3DescentDollUpdate = {
   rotateDeg: number
 }
 
-/** 인형 중심이 머물 수 있는 가로 한계 (world %) */
-function getGame3DollPushBounds(): { min: number; max: number } {
-  const half = getGame3DollWidthPercent(0) / 2
-  return {
-    min: GAME3_GUIDE.giftBoxBoundaryX + GAME3_PHYSICS.pushBoundMargin + half,
-    max: 100 - GAME3_PHYSICS.pushBoundMargin - half,
-  }
-}
-
 /**
- * 하강 한 스텝 — 현재 lift에서 다리(어깨+아랫팔) 박스가 인형 실루엣에 닿으면
- * 그 인형을 다리 반대쪽(중심 방향)으로 밀고 살짝 회전시킨다.
- * 양쪽 다리가 동시에 닿으면(인형이 가운데) 밀리지 않고 그대로 — 잡기 후보가 된다.
+ * 하강 한 스텝 — 다리가 인형 실루엣에 닿으면 Game2처럼 기울기만 (2D: x 이동 없음).
+ * 양쪽 다리 동시 접촉(가운데)이면 회전 없음.
  */
 export function stepGame3DescentPush(
   clawXPercent: number,
@@ -896,7 +982,6 @@ export function stepGame3DescentPush(
   dtMs: number,
 ): Game3DescentDollUpdate[] {
   const boxes = getGame3ClawHitboxes(clawXPercent, lift)
-  const bounds = getGame3DollPushBounds()
   const updates: Game3DescentDollUpdate[] = []
 
   for (const doll of dolls) {
@@ -911,25 +996,107 @@ export function stepGame3DescentPush(
 
     if (!leftContact && !rightContact) continue
 
-    // 왼쪽 다리는 인형을 오른쪽(+)으로, 오른쪽 다리는 왼쪽(-)으로 민다.
     let dir = 0
     if (leftContact) dir += 1
     if (rightContact) dir -= 1
-    if (dir === 0) continue // 양쪽 straddle — 가운데, 그대로 둠
+    if (dir === 0) continue
 
-    const newX = clamp(
-      doll.xPercent + dir * GAME3_PHYSICS.pushSpeedPctPerMs * dtMs,
-      bounds.min,
-      bounds.max,
-    )
     const newRot = clamp(
       doll.rotateDeg + dir * GAME3_PHYSICS.rotSpeedDegPerMs * dtMs,
       -GAME3_PHYSICS.maxRotateDeg,
       GAME3_PHYSICS.maxRotateDeg,
     )
 
-    if (newX !== doll.xPercent || newRot !== doll.rotateDeg) {
-      updates.push({ id: doll.id, xPercent: newX, rotateDeg: newRot })
+    if (newRot !== doll.rotateDeg) {
+      updates.push({ id: doll.id, xPercent: doll.xPercent, rotateDeg: newRot })
+    }
+  }
+
+  return updates
+}
+
+/** 팁 프로브가 인형 실루엣에 닿았는지 — innerSign: 안쪽 (왼팁 +1, 오른팁 −1) */
+function tipTouchesGame3Doll(
+  tipXPercent: number,
+  tipYPercent: number,
+  innerSign: 1 | -1,
+  doll: Game3DollState,
+): boolean {
+  const mask = getDollAlphaMask(doll.imageSrc)
+  if (!mask) return false
+
+  const { closeProbeHalfHeightPx, closeProbeInsetPx } = GAME3_PHYSICS
+  const worldWidthPx = GAME3_WORLD.width * GAME3_WORLD.widthScale
+  const probeHalfH = closeProbeHalfHeightPx * (GAME3_DOLLS.emojiSizePx / 150)
+
+  for (let dy = -probeHalfH; dy <= probeHalfH; dy += 3) {
+    for (const insetPx of [0, closeProbeInsetPx]) {
+      const x = tipXPercent + ((innerSign * insetPx) / worldWidthPx) * 100
+      const y = tipYPercent + (dy / GAME3_WORLD.height) * 100
+      const uv = worldPointToGame3DollUV(x, y, doll)
+      if (uv && sampleDollAlpha(mask, uv.u, uv.v) >= DOLL_ALPHA_THRESHOLD) return true
+    }
+  }
+  return false
+}
+
+export type Game3DollRotateUpdate = { id: number; rotateDeg: number }
+
+/**
+ * 오므림 한 스텝 — Game2 stepClawClose의 회전만 (팁 이동량 × tiltDegPerPx, x/y 밀림 없음).
+ */
+export function stepGame3CloseDollRotate(
+  claw: {
+    xPercent: number
+    clawLiftPercent: number
+    gripTLeft: number
+    gripTRight: number
+  },
+  nextGrip: { gripTLeft: number; gripTRight: number },
+  dolls: readonly Game3DollState[],
+): Game3DollRotateUpdate[] {
+  const lift = claw.clawLiftPercent ?? 0
+  const worldWidthPx = GAME3_WORLD.width * GAME3_WORLD.widthScale
+  const { closeTipPushFactor, closeTiltDegPerPx, maxRotateDeg } = GAME3_PHYSICS
+
+  const prevTips = getGame3ClawTipPoints(
+    claw.xPercent,
+    lift,
+    claw.gripTLeft,
+    claw.gripTRight,
+  )
+  const nextTips = getGame3ClawTipPoints(
+    claw.xPercent,
+    lift,
+    nextGrip.gripTLeft,
+    nextGrip.gripTRight,
+  )
+  const prevGapPx = (Math.abs(prevTips.right.x - prevTips.left.x) * worldWidthPx) / 100
+  const nextGapPx = (Math.abs(nextTips.right.x - nextTips.left.x) * worldWidthPx) / 100
+  const tipTravelPx = Math.max(0, (prevGapPx - nextGapPx) / 2)
+  if (tipTravelPx <= 0) return []
+
+  const pushPx = tipTravelPx * closeTipPushFactor
+  const updates: Game3DollRotateUpdate[] = []
+
+  for (const doll of dolls) {
+    if (doll.captured || doll.falling) continue
+
+    const leftContact = tipTouchesGame3Doll(nextTips.left.x, nextTips.left.y, 1, doll)
+    const rightContact = tipTouchesGame3Doll(nextTips.right.x, nextTips.right.y, -1, doll)
+
+    if (!leftContact && !rightContact) continue
+    if (leftContact && rightContact) continue
+
+    const dir = leftContact ? 1 : -1
+    const newRot = clamp(
+      doll.rotateDeg + dir * pushPx * closeTiltDegPerPx,
+      -maxRotateDeg,
+      maxRotateDeg,
+    )
+
+    if (newRot !== doll.rotateDeg) {
+      updates.push({ id: doll.id, rotateDeg: newRot })
     }
   }
 

@@ -24,6 +24,8 @@ export const GAME3_CLAW = {
   /** 집게 좌우 이동 한계 (world %) — 왼쪽은 디폴트(배출구) 위치까지만 */
   minX: 15,
   maxX: 94,
+  /** playfield 가장자리 여백 — 집게 부품(다리·팁)이 배경 밖으로 나가지 않게 (world %) */
+  playfieldEdgeMargin: 0.5,
   /** 2D — 깊이 고정 (집게가 내려가 멈추는 바닥 높이) */
   playY: GAME3_WORLD.floorY - 4,
   descendDurationMs: 900,
@@ -112,6 +114,11 @@ export const GAME3_PHYSICS = {
   rotSpeedDegPerMs: 0.05,
   /** 충돌로 누적될 수 있는 최대 회전 (deg) */
   maxRotateDeg: 28,
+  /** 오므림 — Game2식 팁 접촉 회전 (위치 이동 없음, pushFactor×tipTravel→deg) */
+  closeTipPushFactor: 0.8,
+  closeTiltDegPerPx: 0.65,
+  closeProbeHalfHeightPx: 9,
+  closeProbeInsetPx: 2,
   /** 인형 중심이 머물 수 있는 좌측 한계 여백 (배출구 경계 기준 world %) */
   pushBoundMargin: 1.5,
   /**

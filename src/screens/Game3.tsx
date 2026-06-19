@@ -29,7 +29,9 @@ import {
   getGame3DollById,
   getGame3HeldDollReleasePoint,
   lerpGame3ClawX,
-  moveGame3ClawX,
+  moveGame3ClawXWithPlayLock,
+  hasGame3ClawCrossedPlayBoundary,
+  stepGame3CloseDollRotate,
   stepGame3DescentPush,
   type Game3DollState,
 } from '../game/game3PlayArea'
@@ -98,6 +100,8 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
     clawLiftPercent: 0,
     hitDollId: null,
   })
+  /** 빨간 경계선을 한 번 넘으면 하강·복귀 전까지 배출구 쪽 재진입 불가 */
+  const playBoundaryLockedRef = useRef(false)
   useEffect(() => {
     preloadDollAlphaMasks(ALL_DOLL_IMAGES)
   }, [])
@@ -123,7 +127,17 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
 
     setClaw((prev) => {
       if (isGame3ClawMovementLocked(prev)) return prev
-      return { ...prev, xPercent: moveGame3ClawX(prev.xPercent, direction) }
+      const gripOpen = prev.open ? 1 : (prev.gripT ?? 1)
+      const clampOpts = {
+        clawLiftPercent: prev.clawLiftPercent ?? 0,
+        gripTLeft: prev.gripTLeft ?? gripOpen,
+        gripTRight: prev.gripTRight ?? gripOpen,
+        clawTiltDeg: prev.clawTiltDeg ?? 0,
+        playBoundaryLocked: playBoundaryLockedRef.current,
+      }
+      const moved = moveGame3ClawXWithPlayLock(prev.xPercent, direction, clampOpts)
+      playBoundaryLockedRef.current = moved.playBoundaryLocked
+      return { ...prev, xPercent: moved.xPercent }
     })
   }, [])
 
@@ -146,6 +160,16 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
 
     setClaw((prev) => {
       if (prev.phase !== 'idle') return prev
+      const gripOpen = prev.open ? 1 : (prev.gripT ?? 1)
+      const clampOpts = {
+        clawLiftPercent: prev.clawLiftPercent ?? 0,
+        gripTLeft: prev.gripTLeft ?? gripOpen,
+        gripTRight: prev.gripTRight ?? gripOpen,
+        clawTiltDeg: prev.clawTiltDeg ?? 0,
+      }
+      if (hasGame3ClawCrossedPlayBoundary(prev.xPercent, clampOpts)) {
+        playBoundaryLockedRef.current = true
+      }
       return {
         ...prev,
         open: true,
@@ -489,6 +513,25 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
       if (nextL <= 0) leftDone = true
       if (nextR <= 0) rightDone = true
 
+      const rotUpdates = stepGame3CloseDollRotate(
+        {
+          xPercent: cur.xPercent,
+          clawLiftPercent: cur.clawLiftPercent ?? 0,
+          gripTLeft: curL,
+          gripTRight: curR,
+        },
+        { gripTLeft: nextL, gripTRight: nextR },
+        dollsRef.current,
+      )
+      if (rotUpdates.length > 0) {
+        setDolls((prev) =>
+          prev.map((doll) => {
+            const u = rotUpdates.find((up) => up.id === doll.id)
+            return u ? { ...doll, rotateDeg: u.rotateDeg } : doll
+          }),
+        )
+      }
+
       setClaw((prev) =>
         prev.phase === 'down'
           ? {
@@ -713,6 +756,7 @@ export function Game3({ onExit, onGoToAttendance }: Game3Props) {
       setClaw((prev) => {
         if (prev.phase !== 'homeward') return prev
         if (linear >= 1) {
+          playBoundaryLockedRef.current = false
           return {
             ...prev,
             phase: 'idle',

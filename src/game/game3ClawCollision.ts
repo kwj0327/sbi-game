@@ -307,6 +307,74 @@ export function getGame3LowerLegRects(
 
 export type Game3Rect = Rect
 
+function rotatePointAboutPivot(
+  x: number,
+  y: number,
+  pivotX: number,
+  pivotY: number,
+  tiltDeg: number,
+): { x: number; y: number } {
+  if (Math.abs(tiltDeg) < 1e-4) return { x, y }
+  const rad = (tiltDeg * Math.PI) / 180
+  const dx = x - pivotX
+  const dy = y - pivotY
+  return {
+    x: pivotX + dx * Math.cos(rad) - dy * Math.sin(rad),
+    y: pivotY + dx * Math.sin(rad) + dy * Math.cos(rad),
+  }
+}
+
+function rectCornerPoints(rect: Rect): { x: number; y: number }[] {
+  return [
+    { x: rect.left, y: rect.top },
+    { x: rect.right, y: rect.top },
+    { x: rect.left, y: rect.bottom },
+    { x: rect.right, y: rect.bottom },
+  ]
+}
+
+/** 집게 중심(xPercent) 기준 좌·우로 뻗는 최대 거리 (world %) — 다리·팁 포함 */
+export function getGame3ClawHorizontalReach(
+  clawLiftPercent: number,
+  gripTLeft = 1,
+  gripTRight = 1,
+  clawTiltDeg = 0,
+): { left: number; right: number } {
+  const centerX = 50
+  const boxes = getGame3ClawHitboxes(centerX, clawLiftPercent)
+  const legs = getGame3LowerLegRects(centerX, clawLiftPercent, gripTLeft, gripTRight)
+  const tips = getGame3ClawTipPoints(centerX, clawLiftPercent, gripTLeft, gripTRight)
+  const frame = getRigFrame(centerX, clawLiftPercent)
+  const pivotX = centerX
+  const pivotY = frame.rigTopY
+
+  const rects = [
+    boxes.body,
+    boxes.leftUpper,
+    boxes.leftLower,
+    boxes.rightUpper,
+    boxes.rightLower,
+    legs.left,
+    legs.right,
+  ]
+
+  const xs: number[] = []
+  for (const rect of rects) {
+    for (const point of rectCornerPoints(rect)) {
+      const rotated = rotatePointAboutPivot(point.x, point.y, pivotX, pivotY, clawTiltDeg)
+      xs.push(rotated.x)
+    }
+  }
+  for (const tip of [tips.left, tips.right]) {
+    const rotated = rotatePointAboutPivot(tip.x, tip.y, pivotX, pivotY, clawTiltDeg)
+    xs.push(rotated.x)
+  }
+
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  return { left: centerX - minX, right: maxX - centerX }
+}
+
 function getRedPartRects(boxes: Game3ClawHitboxes): Rect[] {
   return [boxes.leftUpper, boxes.leftLower, boxes.rightUpper, boxes.rightLower]
 }
