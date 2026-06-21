@@ -8,7 +8,7 @@ import { usePointsSync } from './hooks/usePointsSync'
 import { ClawGame } from './screens/ClawGame'
 import { CollectionScreen } from './screens/CollectionScreen'
 import { Game2 } from './screens/Game2'
-import { Game3 } from './screens/Game3'
+// import { Game3 } from './screens/Game3' // Game 3 — 일시 비활성
 import { HomeScreen } from './screens/HomeScreen'
 
 type Screen = 'home' | GameId
@@ -32,9 +32,10 @@ function AppContent() {
     return <Game2 onExit={() => setScreen('home')} onGoToAttendance={goToAttendance} />
   }
 
-  if (screen === 'game3') {
-    return <Game3 onExit={() => setScreen('home')} onGoToAttendance={goToAttendance} />
-  }
+  // Game 3 — 일시 비활성
+  // if (screen === 'game3') {
+  //   return <Game3 onExit={() => setScreen('home')} onGoToAttendance={goToAttendance} />
+  // }
 
   if (screen === 'collection') {
     return <CollectionScreen onExit={() => setScreen('home')} />
