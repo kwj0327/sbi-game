@@ -11,6 +11,9 @@ export function TopClawUnit({ phase, rodHeightPx }: TopClawUnitProps) {
       className={`machine-claw${phase !== 'spinning' ? ' machine-claw--active' : ''}`}
       aria-hidden="true"
     >
+      <div className="machine-claw__housing">
+        <span className="machine-claw__push-label">PUSH</span>
+      </div>
       <div className="machine-claw__body">
         <span className="machine-claw__arrow">▼</span>
       </div>
