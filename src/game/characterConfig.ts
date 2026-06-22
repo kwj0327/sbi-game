@@ -46,7 +46,6 @@ import character48 from '../assets/characters/character-48.png'
 import character49 from '../assets/characters/character-49.png'
 import character50 from '../assets/characters/character-50.png'
 import character51 from '../assets/characters/character-51.png'
-import character52 from '../assets/characters/character-52.png'
 import character54 from '../assets/characters/character-54.png'
 import character56 from '../assets/characters/character-56.png'
 
@@ -99,7 +98,6 @@ export const CHARACTER_IMAGES = [
   character49,
   character50,
   character51,
-  character52,
   character54,
   character56,
 ] as const

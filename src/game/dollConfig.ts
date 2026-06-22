@@ -24,7 +24,7 @@ export const ORIGINAL_DOLL_IMAGES = [
   game1Doll10,
 ] as const
 
-/** 전체 인형 도감 — 원본 10 + 캐릭터 51 = 61종 */
+/** 전체 인형 도감 — 원본 10 + 캐릭터 50 = 60종 */
 export const ALL_DOLL_IMAGES = [...ORIGINAL_DOLL_IMAGES, ...CHARACTER_IMAGES] as const
 
 export const ALL_DOLL_COUNT = ALL_DOLL_IMAGES.length
@@ -91,7 +91,6 @@ export const ALL_DOLL_NAMES = [
   '토끼 마루',
   '개구리 마루',
   '검은고양이 지지',
-  '포치타',
   '가오나시',
   '몬치치',
 ] as const
