@@ -24,7 +24,7 @@ export const ORIGINAL_DOLL_IMAGES = [
   game1Doll10,
 ] as const
 
-/** 전체 인형 도감 — 원본 10 + 캐릭터 56 = 66종 */
+/** 전체 인형 도감 — 원본 10 + 캐릭터 53 = 63종 */
 export const ALL_DOLL_IMAGES = [...ORIGINAL_DOLL_IMAGES, ...CHARACTER_IMAGES] as const
 
 export const ALL_DOLL_COUNT = ALL_DOLL_IMAGES.length
@@ -62,7 +62,6 @@ export const ALL_DOLL_NAMES = [
   '흰둥이',
   '조지왕',
   '타마마',
-  '구데타마',
   '도로로',
   '기로로',
   '리락쿠마',
@@ -79,7 +78,6 @@ export const ALL_DOLL_NAMES = [
   '케로로',
   '파자마 짱구',
   '하치와레',
-  '라이언 춘식이',
   '별의 커비',
   '슬라임',
   '우사기',
@@ -97,7 +95,6 @@ export const ALL_DOLL_NAMES = [
   '포치타',
   '보우네즈미',
   '가오나시',
-  '파치리스',
   '몬치치',
 ] as const
 

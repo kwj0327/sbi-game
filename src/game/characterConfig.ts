@@ -17,7 +17,6 @@ import character16 from '../assets/characters/character-16.png'
 import character17 from '../assets/characters/character-17.png'
 import character18 from '../assets/characters/character-18.png'
 import character19 from '../assets/characters/character-19.png'
-import character20 from '../assets/characters/character-20.png'
 import character21 from '../assets/characters/character-21.png'
 import character22 from '../assets/characters/character-22.png'
 import character23 from '../assets/characters/character-23.png'
@@ -34,7 +33,6 @@ import character33 from '../assets/characters/character-33.png'
 import character34 from '../assets/characters/character-34.png'
 import character35 from '../assets/characters/character-35.png'
 import character36 from '../assets/characters/character-36.png'
-import character37 from '../assets/characters/character-37.png'
 import character38 from '../assets/characters/character-38.png'
 import character39 from '../assets/characters/character-39.png'
 import character40 from '../assets/characters/character-40.png'
@@ -52,7 +50,6 @@ import character51 from '../assets/characters/character-51.png'
 import character52 from '../assets/characters/character-52.png'
 import character53 from '../assets/characters/character-53.png'
 import character54 from '../assets/characters/character-54.png'
-import character55 from '../assets/characters/character-55.png'
 import character56 from '../assets/characters/character-56.png'
 
 export const CHARACTER_IMAGES = [
@@ -75,7 +72,6 @@ export const CHARACTER_IMAGES = [
   character17,
   character18,
   character19,
-  character20,
   character21,
   character22,
   character23,
@@ -92,7 +88,6 @@ export const CHARACTER_IMAGES = [
   character34,
   character35,
   character36,
-  character37,
   character38,
   character39,
   character40,
@@ -110,7 +105,6 @@ export const CHARACTER_IMAGES = [
   character52,
   character53,
   character54,
-  character55,
   character56,
 ] as const
 
