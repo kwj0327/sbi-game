@@ -42,13 +42,11 @@ import character43 from '../assets/characters/character-43.png'
 import character44 from '../assets/characters/character-44.png'
 import character45 from '../assets/characters/character-45.png'
 import character46 from '../assets/characters/character-46.png'
-import character47 from '../assets/characters/character-47.png'
 import character48 from '../assets/characters/character-48.png'
 import character49 from '../assets/characters/character-49.png'
 import character50 from '../assets/characters/character-50.png'
 import character51 from '../assets/characters/character-51.png'
 import character52 from '../assets/characters/character-52.png'
-import character53 from '../assets/characters/character-53.png'
 import character54 from '../assets/characters/character-54.png'
 import character56 from '../assets/characters/character-56.png'
 
@@ -97,13 +95,11 @@ export const CHARACTER_IMAGES = [
   character44,
   character45,
   character46,
-  character47,
   character48,
   character49,
   character50,
   character51,
   character52,
-  character53,
   character54,
   character56,
 ] as const
